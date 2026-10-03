@@ -69,7 +69,7 @@ export const KITS = {
     attacks: [
       { anim: 'ST_Attack1', fb: 'Attack1', dur: 0.45, hit: 0.2, mult: 1.05, range: 22, type: 'bolt', sfx: 'swing', push: 0 },
       { anim: 'ST_Attack2', fb: 'Attack2', dur: 0.45, hit: 0.2, mult: 1.1, range: 22, type: 'bolt', sfx: 'swing', push: 0 },
-      { anim: 'ST_Attack3', fb: 'Attack3', dur: 0.65, hit: 0.38, mult: 1.8, range: 22, type: 'bolt', big: true, sfx: 'swingHeavy', push: 0, heavy: true },
+      { anim: 'ST_Point', fb: 'Attack3', dur: 0.75, hit: 0.25, mult: 0.55, range: 9, type: 'breath', sfx: 'fire', push: 0, heavy: true },
     ],
     skills: [
       { id: 'st_fireball',key: '1', name: 'มหาอัคคีพิโรธ', desc: 'ลูกบอลธาตุยักษ์ ระเบิดเป็นวงกว้างเมื่อกระทบ', mp: 20, cd: 4, mult: 2.6, icon: '🔥' },

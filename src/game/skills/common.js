@@ -99,7 +99,8 @@ export function projectile(p, o) {
       if (o.kind === 'arrow') {
         fx.glow.emit(pos.x, pos.y, pos.z, 0, 0, 0, 0.18, 0.25 * size, c1, { color1: c2, size1: 0 });
       } else {
-        for (let i = 0; i < 2; i++) fx.glow.emit(pos.x + (Math.random() - 0.5) * 0.3 * size, pos.y + (Math.random() - 0.5) * 0.3 * size, pos.z + (Math.random() - 0.5) * 0.3 * size, -dir.x * 2, 0.5, -dir.z * 2, 0.35, 0.7 * size, c1, { color1: c2, size1: 0, drag: 1 });
+        for (let i = 0; i < 2; i++) fx.fire.emit(pos.x + (Math.random() - 0.5) * 0.3 * size, pos.y + (Math.random() - 0.5) * 0.3 * size, pos.z + (Math.random() - 0.5) * 0.3 * size, { vx: -dir.x * 2, vy: 0.8, vz: -dir.z * 2, life: 0.35, size: 0.55 * size, size1: 0.15 * size, color: c1, alpha: 1, alpha1: 0.3, drag: 1 });
+        fx.glow.emit(pos.x, pos.y, pos.z, 0, 0, 0, 0.2, 0.9 * size, c2, { size1: 0 });
         if (Math.random() < 0.5) fx.sparks.emit(pos.x, pos.y, pos.z, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, 0.25, 0.25, c2, { drag: 2 });
       }
       // hits
@@ -157,13 +158,10 @@ export function explosion(p, at, { color, color2, radius = 3, mult = 0, big = fa
   const g = p.game, fx = p.fx;
   const c1 = C(color ?? p.elColor), c2 = C(color2 ?? p.elColor2);
   const ground = at.clone(); ground.y = g.world.heightAt(at.x, at.z);
-  fx.shockwave(ground, { color: c1, radius: radius * 1.2, duration: 0.45 });
-  fx.glow.burst(at, big ? 90 : 45, { speed: radius * 3, up: 2, life: 0.55, lifeVar: 0.3, size: big ? 1.1 : 0.8, color: c2, color1: c1, drag: 2.5 });
-  fx.sparks.burst(at, big ? 50 : 24, { speed: radius * 4.5, up: 3, life: 0.45, size: 0.5, color: new THREE.Color(1, 1, 1), color1: c1, gravity: 8, drag: 1.5 });
-  fx.flare(at, c2, radius * 1.1, 0.2);
+  fx.explode(at, { color: c1, color2: c2, radius: big ? radius : radius * 0.8, power: big ? 1.2 : 0.6 });
   fx.light(at, c1, big ? 50 : 25, 0.35, radius * 4);
   fx.scorch(ground, radius * 0.8, c1, 4);
-  if (big) { fx.debris(ground, { count: 18, speed: 9 }); g.engine.ripple(at, 1.0, 1.2, 0.35); g.engine.shake(0.7); g.audio.play('boom'); }
+  if (big) { g.engine.ripple(at, 1.0, 1.2, 0.35); g.engine.shake(0.7); g.audio.play('boom'); }
   else { g.engine.shake(0.25); g.audio.play('hit', { pitch: 0.6 }); }
   if (mult) hitCircle(p, ground, radius, mult, { knock: big ? 2 : 1, ...opts });
 }

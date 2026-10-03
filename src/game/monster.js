@@ -370,12 +370,12 @@ export class Monster {
     const fireC = new THREE.Color(0xff6a10), fireC2 = new THREE.Color(0xffe080);
     g.fx.timed(1.3, (k) => {
       ball.position.lerpVectors(start, p, k * k);
-      for (let i = 0; i < 4; i++) g.fx.glow.emit(ball.position.x + (Math.random() - 0.5), ball.position.y + (Math.random() - 0.5), ball.position.z + (Math.random() - 0.5), 0, 2, 0, 0.6, 1.4, fireC2, { color1: fireC, size1: 0.2, drag: 1 });
+      for (let i = 0; i < 3; i++) g.fx.fire.emit(ball.position.x + (Math.random() - 0.5), ball.position.y + (Math.random() - 0.5), ball.position.z + (Math.random() - 0.5), { vx: 0, vy: 2, vz: 0, life: 0.6, size: 1.6, size1: 0.6, color: fireC, alpha: 1, alpha1: 0.2, drag: 1 });
+      if (Math.random() < 0.5) g.fx.smoke.emit(ball.position.x, ball.position.y, ball.position.z, { vx: 0, vy: 1, vz: 0, life: 1.2, size: 1.2, size1: 3, color: new THREE.Color(0.3, 0.27, 0.25), alpha: 0.5, alpha1: 0, drag: 1 });
     }, () => {
       g.world.scene.remove(ball); ball.geometry.dispose(); ball.material.dispose();
       g.fx.shockwave(p, { color: 0xff6a10, radius: R + 1, duration: 0.5 });
-      g.fx.glow.burst(p.clone().setY(p.y + 0.5), 50, { speed: 10, up: 4, life: 0.6, size: 1.1, color: fireC2, color1: fireC, drag: 2 });
-      g.fx.debris(p, { count: 16, speed: 9 });
+      g.fx.explode(p.clone().setY(p.y + 0.6), { color: fireC, color2: fireC2, radius: R, power: 1 });
       g.fx.scorch(p, R, 0xff5a10, 6);
       g.engine.ripple(p.clone().setY(p.y + 0.5), 0.9, 1.2, 0.3);
       g.fx.light(p.clone().setY(p.y + 2), 0xff6a10, 60, 0.4, 16);
@@ -397,8 +397,10 @@ export class Monster {
         const spread = (Math.random() - 0.5) * 0.9;
         const dir = new THREE.Vector3(fwd.x * Math.cos(spread) - fwd.z * Math.sin(spread), -0.12 + (Math.random() - 0.5) * 0.15, fwd.z * Math.cos(spread) + fwd.x * Math.sin(spread));
         const sp = 16 + Math.random() * 8;
-        g.fx.glow.emit(head.x, head.y, head.z, dir.x * sp, dir.y * sp, dir.z * sp, 0.75, 0.6, c1, { color1: c2, size1: 2.6, drag: 1.2 });
+        if (i % 2 === 0) g.fx.fire.emit(head.x, head.y, head.z, { vx: dir.x * sp, vy: dir.y * sp, vz: dir.z * sp, life: 0.8, size: 0.5, size1: 3.2, color: c2, alpha: 1, alpha1: 0.4, drag: 1.2, rotV: (Math.random() - 0.5) * 3 });
+        else g.fx.glow.emit(head.x, head.y, head.z, dir.x * sp, dir.y * sp, dir.z * sp, 0.6, 0.4, c1, { color1: c2, size1: 1.6, drag: 1.2 });
       }
+      if (Math.random() < 0.4) { const q = head.clone().addScaledVector(fwd, 8 + Math.random() * 6); q.y = g.world.heightAt(q.x, q.z); g.fx.smokePuff(q, { count: 1, size: 1.5, size1: 4, life: 1.6, alpha: 0.45, rise: 1.5 }); }
       if (!pd.sfx) { pd.sfx = true; g.audio.play('fire'); }
       pd.tick = (pd.tick || 0) - dt;
       if (pd.tick <= 0) {

@@ -26,8 +26,11 @@ export default {
         const from = bowFrom(p);
         const { dir } = aimDir(p, from, 30);
         dir.y *= 0.3; dir.normalize();
-        fx.drill(from, dir, { length: 30, radius: 1.1, color: p.elColor, color2: p.elColor2, duration: 0.55 });
-        projectile(p, { from, dir, speed: 70, range: 32, radius: 1.2, mult: p.skillMult(s.mult), kind: 'arrow', size: 1.8, pierce: true, heavy: true, knock: 2 });
+        // blue laser arrow: thin bright beam + spiral sleeve + piercing arrow
+        fx.beam(from, dir, { length: 32, radius: 0.35, color: 0x3a8cff, color2: 0xbfe6ff, duration: 0.45 });
+        fx.drill(from, dir, { length: 30, radius: 0.9, color: p.elColor, color2: p.elColor2, duration: 0.5 });
+        projectile(p, { from, dir, speed: 70, range: 32, radius: 1.2, mult: p.skillMult(s.mult), kind: 'arrow', size: 1.8, pierce: true, heavy: true, knock: 2,
+          onHit: (m, at) => { fx.spikeBurst(at, 0xbfe6ff, 3.5, 0.25); fx.cloudBurst(at, { color: 0x3a8cff, color2: 0xffffff, radius: 1.6, count: 6, life: 0.5 }); } });
         g.engine.ripple(from, 0.8, 1.5, 0.3); g.engine.shake(0.4);
         g.audio.play('slashWave');
         p.vel.copy(p.forward()).multiplyScalar(-6);
@@ -93,7 +96,10 @@ export default {
           const dir = V(base.x * Math.cos(a) - base.z * Math.sin(a), base.y, base.z * Math.cos(a) + base.x * Math.sin(a));
           projectile(p, {
             from: from.clone(), dir, speed: 45, range: 24, radius: 0.9, kind: 'arrow', size: 1.3, mult: p.skillMult(s.mult * 0.4),
-            onEnd: (at) => explosion(p, at, { radius: 2.6, mult: p.skillMult(s.mult), big: i === 0, opts: { knock: 2 } }),
+            onEnd: (at) => {
+              explosion(p, at, { color: 0xff6a10, color2: 0xffd04a, radius: 2.6, mult: p.skillMult(s.mult), big: i === 0, opts: { knock: 2 } });
+              setTimeout(() => p.fx.cloudBurst(at.clone().setY(at.y + 0.8), { color: 0x9a40ff, color2: 0xff7ad0, radius: 2.4, count: 8, life: 1.4, rise: 1.6, speed: 0.4 }), 150);
+            },
           });
         }
         p.game.audio.play('slashWave');

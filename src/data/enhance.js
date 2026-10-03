@@ -29,7 +29,7 @@ export const AURA_TIERS = [
   { min: 0,  name: '—',                      color: 0x000000, color2: 0x000000, intensity: 0 },
   { min: 4,  name: 'แสงเหล็กกล้า',            color: 0xdfefff, color2: 0xffffff, intensity: 0.5, particles: 0 },
   { min: 7,  name: 'ออร่าฟ้าคราม',            color: 0x3aa0ff, color2: 0x9fe0ff, intensity: 0.9, particles: 1 },
-  { min: 10, name: 'ออร่าม่วงเวทมนตร์',        color: 0xa040ff, color2: 0xff7bff, intensity: 1.3, particles: 2 },
+  { min: 10, name: 'ออร่าชมพูเวทมนตร์',        color: 0xff3fc8, color2: 0xffa8f0, intensity: 1.3, particles: 2 },
   { min: 12, name: 'ออร่าเพลิงทองคำ',         color: 0xffb020, color2: 0xfff07a, intensity: 1.7, particles: 3, ground: true },
   { min: 14, name: 'ออร่าอเวจีโลหิต',          color: 0xff2a3a, color2: 0xff9a2a, intensity: 2.1, particles: 4, ground: true },
   { min: 15, name: 'ออร่าเทพสวรรค์รุ้ง',        color: 0xffffff, color2: 0xffffff, intensity: 2.6, particles: 5, ground: true, rainbow: true, lightning: true },

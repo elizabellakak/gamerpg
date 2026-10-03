@@ -24,7 +24,8 @@ export default {
         d.stop = true;
         p.vel.multiplyScalar(0.1);
         fx.shockwave(front, { color: p.elColor, radius: 3, duration: 0.4, vertical: true });
-        fx.flare(front, C(p.elColor2), 4, 0.2);
+        fx.spikeBurst(front, p.elColor2, 4.5, 0.32);
+        fx.cloudBurst(front, { color: p.elColor, color2: p.elColor2, radius: 2.4, count: 12, life: 0.75, rise: 0.4 });
         fx.sparks.burst(front, 40, { speed: 10, life: 0.4, size: 0.5, color: new THREE.Color(1, 1, 1), color1: C(p.elColor), drag: 2 });
         g.engine.shake(0.5);
         g.audio.play('crit');
@@ -60,7 +61,9 @@ export default {
       if (!d.cross && p.stateT > 0.62) {
         d.cross = true;
         const c = d.center; const base = c.clone();
+        fx.groundNova(base, { color: p.elColor, radius: 4.5, duration: 0.8 });
         fx.pillar(base, { color: p.elColor, color2: 0xffffff, radius: 0.45, height: 9, duration: 1.0, speed: 4 });
+        g.combat.inCircle(base, 3.5, (m) => fx.burning(m, { color: p.elColor, duration: 2.2, height: m.tpl.height }));
         const side = new THREE.Vector3(Math.cos(p.yaw), 0, -Math.sin(p.yaw));
         const from = base.clone().addScaledVector(side, -3); from.y += 5.6;
         fx.beam(from, side, { length: 6, radius: 0.45, color: p.elColor, color2: p.elColor2, duration: 1.0 });
@@ -87,6 +90,7 @@ export default {
       p.barrierT = 6;
       fx.magicCircle(p.position, { color: p.elColor, radius: 3, duration: 1.2, style: 1, seed: 63, rot: 3 });
       fx.shockwave(p.position, { color: p.elColor2, radius: 5, duration: 0.5 });
+      fx.orbitRing(p.obj, { color: p.elColor, color2: p.elColor2, radius: 1.6, duration: 1.4 });
       fx.rise(p.position, { color: p.elColor2, color1: p.elColor, count: 50, radius: 2, speed: 5, life: 1, size: 0.35 });
       g.engine.ripple(p.position.clone().setY(p.position.y + 1), 0.8, 1.3, 0.3);
       g.audio.play('choir');

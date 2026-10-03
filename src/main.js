@@ -19,6 +19,8 @@ async function boot() {
   const game = new Game(engine, input);
   game.init();
   window.game = game; // debug handle
+  // debug: advance simulation by N seconds at 60 Hz without rendering (used by automated screenshots)
+  window.__advance = (sec) => { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) game.update(1 / 60, 1 / 60); };
   // warm up shaders
   engine.renderer.compile(game.world.scene, engine.camera);
   engine.start((dt, raw) => game.update(dt, raw));

@@ -39,7 +39,12 @@ export default {
       p.invuln = Math.max(p.invuln, 0.35);
       d.hit = new Set();
       const from = p.position.clone(); from.y += 1.2;
-      p.fx.drill(from, p.forward(), { length: 10, radius: 1.5, color: p.elColor, color2: p.elColor2, duration: 0.45 });
+      p.fx.drill(from, p.forward(), { length: 10, radius: 1.2, color: p.elColor, color2: p.elColor2, duration: 0.4 });
+      const to = from.clone().add(p.forward().multiplyScalar(11));
+      p.fx.energyWave(from.clone().setY(from.y - 0.4), to, { color: p.elColor, color2: p.elColor2, duration: 0.3, width: 1.3, onArrive: (at) => {
+        p.fx.spikeBurst(at, p.elColor2, 4.2, 0.3);
+        p.fx.cloudBurst(at, { color: p.elColor, color2: p.elColor2, radius: 2.2, count: 10, life: 0.7 });
+      } });
       p.game.engine.ripple(from, 0.8, 1.4, 0.3);
       p.game.audio.play('slashWave');
       if (p.awakened('sp_pierce')) {
@@ -65,12 +70,18 @@ export default {
     start(p, s, d) {
       p.skillMove = 0.6;
       p.anim(['SP_Twirl', 'Skill'], { dur: 0.5, fade: 0.05 });
-      p.fx.magicCircle(p.position, { color: p.elColor, radius: 4, duration: 2.4, follow: p.obj, style: 2, seed: 91, rot: 4, opacity: 0.8 });
+      p.fx.magicCircle(p.position, { color: p.elColor, radius: 4, duration: 2.4, follow: p.obj, style: 2, seed: 91, rot: 4, opacity: 0.5 });
       p.game.audio.play('whirl');
+      d.swirl = 0;
     },
     update(p, dt, s, d) {
       const g = p.game, fx = p.fx;
-      d.ring = (d.ring || 0) - dt; d.tick = (d.tick || 0) - dt;
+      d.ring = (d.ring || 0) - dt; d.tick = (d.tick || 0) - dt; d.swirl -= dt;
+      if (d.swirl <= 0) {
+        d.swirl = 0.45;
+        const alt = Math.floor(p.stateT / 0.45) % 2;
+        fx.groundSwirl(p.position, { color: alt ? p.elColor : 0x7fb8ff, color2: alt ? p.elColor2 : 0xc890ff, radius: 5, duration: 0.9, spin: 6 });
+      }
       if (d.ring <= 0) {
         d.ring = 0.14;
         d.a = (d.a || 0) + 2.1;
@@ -105,7 +116,10 @@ export default {
         }
         if (d.tick <= 0) {
           d.tick = 0.09;
-          g.combat.inArc(p.position, p.yaw, 7.5, 1.1, (m) => g.combat.playerHit(m, p.skillMult(s.mult), { color: p.elColor, knock: 0.15, from: p.position, noFx: Math.random() < 0.5 }));
+          g.combat.inArc(p.position, p.yaw, 7.5, 1.1, (m) => {
+            g.combat.playerHit(m, p.skillMult(s.mult), { color: p.elColor, knock: 0.15, from: p.position, noFx: true });
+            if (Math.random() < 0.4) p.fx.spikeBurst(m.position.clone().setY(m.position.y + m.tpl.height * 0.6), p.elColor2, 2.2, 0.16);
+          });
           g.audio.play('swing', { pitch: 1.4 + Math.random() * 0.3 });
         }
       } else if (!d.fin) {

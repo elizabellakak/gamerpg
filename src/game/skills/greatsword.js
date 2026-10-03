@@ -9,6 +9,8 @@ function seismicLine(p, yaw, s, hitSet, delay0 = 0) {
       const q = p.position.clone().addScaledVector(dir, 2 + i * 1.7); q.y = g.world.heightAt(q.x, q.z);
       fx.spikes(q, { color: p.elColor, count: 6, radius: 1.3, height: 2.2 + i * 0.12, duration: 1.2, ice: false });
       fx.debris(q, { count: 8, speed: 7, size: 0.35 });
+      fx.flameRays(q, { color: p.elColor, color2: p.elColor2, count: i === 7 ? 18 : 6, height: i === 7 ? 4.5 : 2.4, life: 0.4 });
+      if (i === 7) { fx.spikeBurst(q.clone().setY(q.y + 1.2), p.elColor2, 5, 0.3); fx.cloudBurst(q.clone().setY(q.y + 0.6), { color: p.elColor, color2: p.elColor2, radius: 2.2, count: 10, life: 0.8 }); }
       fx.scorch(q, 1.5, p.elColor, 3.5);
       fx.glow.burst(q.clone().setY(q.y + 0.5), 12, { speed: 4, up: 4, life: 0.5, size: 0.5, color: C(p.elColor2), color1: C(p.elColor), drag: 2 });
       if (i % 2 === 0) { g.engine.shake(0.35); g.audio.play('boom'); }
@@ -93,6 +95,8 @@ export default {
         explosion(p, c.clone().setY(c.y + 0.5), { radius: 5.5, mult: p.skillMult(s.mult), big: true, opts: { knock: 5, heavy: true } });
         fx.spikes(c, { color: p.elColor, count: 12, radius: 4.2, height: 2.4, duration: 1.4, ice: false });
         fx.shockwave(c, { color: 0xffffff, radius: 8, duration: 0.5 });
+        fx.groundNova(c, { color: p.elColor, radius: 6, duration: 0.8 });
+        fx.flameRays(c, { color: p.elColor, color2: p.elColor2, count: 16, height: 5, life: 0.5 });
         fx.scorch(c, 5.5, p.elColor, 6);
         g.engine.shake(1.4); g.engine.doHitStop(0.08); g.engine.ripple(c.clone().setY(c.y + 1), 1.6, 1.0, 0.5);
       }
@@ -139,7 +143,8 @@ export default {
             fx.spikes(q, { color: 0xff5a10, count: 5, radius: 1.8, height: 2.8, duration: 2.2, ice: false });
             fx.scorch(q, 2.6, p.elColor, 7);
             fx.glow.burst(q.clone().setY(q.y + 0.6), 26, { speed: 6, up: 6, life: 0.8, size: 0.9, color: C(p.elColor2), color1: C(p.elColor), drag: 1.5 });
-            fx.pillar(q, { color: p.elColor, color2: p.elColor2, radius: 0.8, height: 6 + Math.random() * 4, duration: 0.7, speed: 4 });
+            fx.flameRays(q, { color: p.elColor, color2: p.elColor2, count: 12, height: 5 + Math.random() * 3, life: 0.55 });
+            if (i % 4 === 0) fx.spikeBurst(q.clone().setY(q.y + 1.5), p.elColor2, 6, 0.3);
             fx.debris(q, { count: 10, speed: 10 });
             if (i % 3 === 0) { g.engine.ripple(q.clone().setY(q.y + 1), 0.9, 1.2, 0.3); fx.light(q.clone().setY(q.y + 2), p.elColor, 70, 0.5, 16); }
             g.engine.shake(0.5);

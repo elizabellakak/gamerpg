@@ -286,7 +286,7 @@ export function hexShieldMaterial(color) {
         float edge = smoothstep(0.42, 0.5, hexDist(g));
         float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.5);
         float scan = smoothstep(0.06, 0.0, abs(fract(vP.y * 0.25 - uTime * 0.6) - 0.5));
-        float a2 = (edge * 0.55 + fr * 0.9 + scan * 0.25 + uHit * 0.6) * uOpacity;
+        float a2 = (edge * 0.3 + fr * 0.6 + scan * 0.15 + uHit * 0.5) * uOpacity;
         gl_FragColor = vec4(uColor * a2 + vec3(1.0) * edge * fr * 0.3 * uOpacity, 1.0);
       }`,
   });
@@ -310,6 +310,51 @@ export function spiritMaterial(color, color2) {
         vec3 col = mix(uColor, uColor2, scales) * (0.4 + fr * 1.4 + scales * 0.6);
         col += vec3(1.0) * smoothstep(0.03, 0.0, d) * 2.0;
         gl_FragColor = vec4(col * body * uOpacity, 1.0);
+      }`,
+  });
+}
+
+// Brush-stroke slash with strand erosion (textured, layered)
+export function slashMaterial2(map, color, color2) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: {
+      uMap: { value: map }, uNoise: { value: noiseTex() }, uColor: { value: new THREE.Color(color) }, uColor2: { value: new THREE.Color(color2) },
+      uProgress: { value: 0 }, uFade: { value: 1 }, uTrail: { value: 0.85 }, uTime: globalUniforms.uTime, uGain: { value: 1 },
+    },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `
+      uniform sampler2D uMap; uniform sampler2D uNoise; uniform vec3 uColor; uniform vec3 uColor2; uniform float uProgress; uniform float uFade; uniform float uTrail; uniform float uTime; uniform float uGain;
+      varying vec2 vUv;
+      void main(){
+        float head = uProgress * 1.35;
+        float d = head - vUv.x;
+        if (d < 0.0) discard;
+        float trail = smoothstep(uTrail, 0.0, d);
+        vec4 t = texture2D(uMap, vec2(vUv.x * 0.9 + uProgress * 0.15, vUv.y));
+        float s = t.r;
+        // strands erode from the tail
+        float n = texture2D(uNoise, vec2(vUv.x * 3.0 - uTime * 0.7, vUv.y * 0.35)).r;
+        float erode = smoothstep(d * 1.25 - 0.1, d * 1.25 + 0.15, n + 0.25);
+        float a = s * trail * erode;
+        vec3 col = mix(uColor, uColor2, smoothstep(0.35, 0.85, s));
+        col += vec3(1.0, 0.97, 0.9) * smoothstep(0.82, 1.0, s) * smoothstep(0.25, 0.0, d);
+        gl_FragColor = vec4(col * a * uFade * uGain * 1.5, 1.0);
+      }`,
+  });
+}
+
+// Expanding fresnel shock sphere
+export function shockSphereMaterial(color) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide,
+    uniforms: { uColor: { value: new THREE.Color(color) }, uOpacity: { value: 1 }, uNoise: { value: noiseTex() }, uTime: globalUniforms.uTime },
+    vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP; void main(){ vP = position; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uOpacity; uniform sampler2D uNoise; uniform float uTime; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main(){
+        float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 3.0);
+        float n = texture2D(uNoise, vec2(atan(vP.z, vP.x) * 0.6 + uTime * 0.2, vP.y * 0.8)).r;
+        gl_FragColor = vec4(uColor * fr * (0.6 + n * 0.9) * uOpacity * 1.4, 1.0);
       }`,
   });
 }

@@ -31,6 +31,8 @@ function meteor(p, at, size, mult, delay = 0, big = false) {
         fx.spikes(at, { color: p.elColor, count: 14, radius: 6.5, height: 2.6, duration: 2, ice: false });
         fx.scorch(at, 10, p.elColor, 8);
         fx.debris(at, { count: 60, speed: 15, size: 0.5 });
+        fx.cloudBurst(at.clone().setY(at.y + 1.5), { color: 0xff3aa0, color2: 0xffe070, radius: 8, count: 40, life: 1.8, rise: 2.5 });
+        fx.darkDisk(at, { radius: 12, duration: 2 });
         g.audio.play('thunder');
       }
     });
@@ -42,7 +44,7 @@ export default {
     start(p, s, d) {
       aimDir(p, staffTip(p), 24);
       p.anim(['ST_Point', 'ST_Attack1', 'Attack1'], { once: true, dur: 0.5, fade: 0.05 });
-      p.fx.magicCircle(p.position, { color: p.elColor, radius: 1.6, duration: 0.8, style: 1, seed: 121, rot: 4 });
+      p.fx.magicCircle(p.position, { color: 0xffc040, radius: 1.8, duration: 0.9, style: 1, seed: 121, rot: 4 });
       p.game.audio.play('fire');
     },
     update(p, dt, s, d) {
@@ -56,7 +58,11 @@ export default {
           const dd = V(dir.x * Math.cos(a) - dir.z * Math.sin(a), dir.y, dir.z * Math.cos(a) + dir.x * Math.sin(a));
           projectile(p, {
             from: from.clone(), dir: dd, speed: 24, range: 26, radius: 1.2, kind: 'orb', size: 2.6, homing: i === 0 ? target : null,
-            onEnd: (at) => explosion(p, at, { radius: 4.5, mult: p.skillMult(s.mult), big: true, opts: { knock: 3, heavy: true } }),
+            onEnd: (at) => {
+              explosion(p, at, { radius: 4.5, mult: p.skillMult(s.mult), big: true, opts: { knock: 3, heavy: true } });
+              p.fx.cloudBurst(at, { color: p.elColor, color2: 0xfff0a0, radius: 4.2, count: 26, life: 1.3, rise: 1.2 });
+              p.fx.flameRays(at, { color: p.elColor, color2: p.elColor2, count: 14, height: 4, life: 0.45 });
+            },
           });
         }
         p.game.engine.ripple(from, 0.6, 1.5, 0.25);
@@ -71,6 +77,7 @@ export default {
       d.dir = t.point.clone().sub(p.position).setY(0).normalize();
       if (!isFinite(d.dir.x)) d.dir = p.forward().clone();
       p.anim(['ST_Attack3', 'Attack3'], { once: true, dur: 0.65, fade: 0.05 });
+      p.fx.magicCircle(p.position, { color: 0xffc040, radius: 1.8, duration: 0.9, style: 2, seed: 123, rot: 4 });
     },
     update(p, dt, s, d) {
       const g = p.game, fx = p.fx;
@@ -82,6 +89,7 @@ export default {
           setTimeout(() => {
             const q = p.position.clone().addScaledVector(d.dir, 1.8 + i * 1.6); q.y = g.world.heightAt(q.x, q.z);
             fx.spikes(q, { color: p.elColor, count: 6, radius: 1.3, height: 2.4 + i * 0.1, duration: 1.8, ice: true });
+            fx.cloudBurst(q.clone().setY(q.y + 0.8), { color: 0x9fdcff, color2: 0xffffff, radius: 2, count: 6, life: 0.9, rise: 0.5, speed: 0.6 });
             fx.sparks.burst(q.clone().setY(q.y + 0.6), 10, { speed: 5, up: 4, life: 0.4, size: 0.35, color: new THREE.Color(1, 1, 1), color1: C(p.elColor), gravity: 8 });
             fx.dust.burst(q.clone().setY(q.y + 0.4), 6, { speed: 2, up: 1, life: 1, size: 1.4, size1: 2.5, color: new THREE.Color(0.85, 0.95, 1), drag: 2 });
             if (i % 3 === 0) g.audio.play('crit');
@@ -99,6 +107,7 @@ export default {
       const g = p.game, fx = p.fx;
       p.skillLock = true;
       p.anim(['ST_Channel', 'Cast', 'Attack3'], { once: true, dur: 0.9, fade: 0.08 });
+      fx.magicCircle(p.position, { color: 0xffc040, radius: 2, duration: 1.2, style: 0, seed: 125, rot: 4 });
       const t = targetPoint(p, 14, 7);
       d.center = t.point;
       const c = d.center;
@@ -123,7 +132,9 @@ export default {
           fx.lightning(top, q, { color: 0x8f7bff, core: 0xf0ecff, width: 0.09, duration: 0.3, segments: 14, jitter: 1.4, branches: 3 });
           fx.shockwave(q, { color: 0x9b8bff, radius: 2.4, duration: 0.35 });
           fx.scorch(q, 1.6, 0x9b7bff, 3.5);
-          fx.sparks.burst(q.clone().setY(q.y + 0.3), 20, { speed: 10, up: 4, life: 0.35, size: 0.6, color: new THREE.Color(0xffffff), color1: new THREE.Color(0x7b6bff), gravity: 12, drag: 2 });
+          fx.streaks(q.clone().setY(q.y + 0.3), 18, { speed: 12, up: 4, life: 0.35, size: 0.16, color: new THREE.Color(0xffffff), color1: new THREE.Color(0x7b6bff), gravity: 12 });
+          fx.starFlash(q.clone().setY(q.y + 0.4), new THREE.Color(0xa898ff), 3, 0.18);
+          fx.smokePuff(q, { count: 2, size: 1.0, size1: 2.6, life: 1.2, alpha: 0.4, rise: 1 });
           fx.light(q.clone().setY(q.y + 2), 0xa090ff, 60, 0.25, 18);
           if (Math.random() < 0.35) g.engine.ripple(q.clone().setY(q.y + 1), 0.5, 1.6, 0.2);
           g.engine.shake(0.35);
@@ -148,7 +159,7 @@ export default {
       const c = d.c;
       g.cinematic(3.4, c);
       g.audio.play('charge'); g.audio.play('choir');
-      fx.magicCircle(p.position, { color: p.elColor, radius: 3, duration: 3, style: 2, seed: 131, rot: 3 });
+      fx.magicCircle(p.position, { color: 0xffc040, radius: 3, duration: 3, style: 2, seed: 131, rot: 3 });
       fx.pillar(p.position, { color: p.elColor, color2: p.elColor2, radius: 1.2, height: 30, duration: 2.6, speed: 3 });
       fx.magicCircle(c, { color: p.elColor, radius: 10, duration: 3.4, style: 0, seed: 132, rot: 0.6 });
       [24, 28, 32].forEach((h, i) => fx.magicCircle(c.clone().setY(c.y + h), { color: i === 1 ? p.elColor2 : p.elColor, radius: 6 + i * 2.5, duration: 3.0, style: i, seed: 133 + i, rot: i % 2 ? -1 : 1, y: 0 }));

@@ -86,6 +86,25 @@ export class AuraController {
       fx.glow.emit(tmpA.x, tmpA.y, tmpA.z, (Math.random() - 0.5) * 0.6, up * (0.5 + Math.random()), (Math.random() - 0.5) * 0.6,
         0.5 + Math.random() * 0.6, (0.12 + t.intensity * 0.06) * (0.6 + Math.random()), ca, { color1: cb, drag: 1 });
     }
+    // soft halo hugging the weapon (dense, short-lived glow points that follow the blade)
+    if (this.plus >= 7) {
+      const n = this.plus >= 12 ? 6 : 4;
+      for (let i = 0; i < n; i++) {
+        tmpA.lerpVectors(base, tip, (i + Math.random()) / n);
+        const hc = t.rainbow ? hueColor.setHSL((performance.now() * 0.0003 + i / n) % 1, 1, 0.6).clone() : (i % 2 ? c1 : c2);
+        fx.glow.emit(tmpA.x, tmpA.y, tmpA.z, 0, 0, 0, 0.09, 0.35 + t.intensity * 0.18, hc, { size1: 0.2 });
+      }
+    }
+    // twinkling star sparkles along the blade (classic enhanced-weapon look)
+    if (this.plus >= 7) {
+      this.sparkAcc = (this.sparkAcc || 0) + dt * (4 + this.plus * 1.2);
+      while (this.sparkAcc > 1) {
+        this.sparkAcc -= 1;
+        tmpA.lerpVectors(base, tip, Math.random());
+        const sc = t.rainbow ? hueColor.setHSL(Math.random(), 1, 0.7).clone() : c2;
+        fx.star.emit(tmpA.x, tmpA.y, tmpA.z, { life: 0.35 + Math.random() * 0.3, size: 0.05, size1: 0.22 + this.plus * 0.012, rot: Math.random() * 3, rotV: 0, color: new THREE.Color(1, 1, 1), color1: sc, alpha: 1, alpha1: 0 });
+      }
+    }
     // ground motes
     if (this.hero && t.ground) {
       if (Math.random() < dt * (t.rainbow ? 40 : 20)) {

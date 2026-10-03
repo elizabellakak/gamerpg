@@ -337,6 +337,29 @@ export class Player {
     g.audio.play('swing', { pitch: 1.5 });
   }
 
+  // staff combo finisher: billowing flame breath cone
+  hit_breath(a) {
+    const g = this.game, fx = this.fx;
+    const from = this.tipNode.getWorldPosition(new THREE.Vector3());
+    const fwd = this.forward().clone();
+    const c1 = new THREE.Color(this.elColor), c2 = new THREE.Color(this.elColor2);
+    fx.magicCircle(this.position, { color: 0xffc040, radius: 1.6, duration: 0.7, style: 1, seed: 127, rot: 5 });
+    g.audio.play('fire');
+    let ticks = 0;
+    fx.timed(0.5, () => {
+      for (let i = 0; i < 5; i++) {
+        const spread = (Math.random() - 0.5) * 0.6;
+        const d = new THREE.Vector3(fwd.x * Math.cos(spread) - fwd.z * Math.sin(spread), -0.05 + (Math.random() - 0.5) * 0.12, fwd.z * Math.cos(spread) + fwd.x * Math.sin(spread));
+        const sp = 14 + Math.random() * 6;
+        fx.cloud.emit(from.x, from.y, from.z, { vx: d.x * sp, vy: d.y * sp + 0.5, vz: d.z * sp, life: 0.65, size: 0.6, size1: 3.6, color: i % 2 ? c2 : c1, color1: c1, alpha: 1, alpha1: 0, drag: 1.6, rotV: (Math.random() - 0.5) * 3 });
+        if (i % 2 === 0) fx.fire.emit(from.x, from.y, from.z, { vx: d.x * sp, vy: d.y * sp, vz: d.z * sp, life: 0.55, size: 0.5, size1: 2.6, color: c1, alpha: 1, alpha1: 0.3, drag: 1.6 });
+      }
+    });
+    for (let k = 0; k < 4; k++) setTimeout(() => {
+      g.combat.inArc(this.position, this.yaw, a.range, 0.9, (m) => { g.combat.playerHit(m, a.mult, { color: this.elColor, knock: 0.6, from: this.position, noFx: true }); if (k === 0) fx.burning(m, { color: this.elColor, duration: 1.5, height: m.tpl.height }); });
+    }, k * 110);
+  }
+
   hit_bolt(a) {
     const g = this.game;
     const from = this.tipNode.getWorldPosition(new THREE.Vector3());
