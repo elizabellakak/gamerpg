@@ -946,7 +946,7 @@ MONSTERS = {
     "wolf": build_wolf,
     "goblin": build_goblin,
     "golem": build_golem,
-    "dragon": build_dragon,
+    "dragon": lambda: __import__("pipeline.dragon", fromlist=["build_dragon"]).build_dragon(),
 }
 
 

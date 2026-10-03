@@ -119,7 +119,7 @@ export class Showcase {
     this.pedestal.visible = mode === 'enhance';
     this.pivot.visible = true;
     if (mode === 'enhance') {
-      this.camPos.set(-1.3, 2.6, 6.8); this.camTarget.set(-1.3, 2.3, 0);
+      this.camPos.set(1.5, 2.7, 7.8); this.camTarget.set(1.5, 2.3, 0);
       this.floorCircle.mat.uniforms.uColor.value.set(0xff8a3a);
     } else {
       this.camPos.set(0, 3.0, 11); this.camTarget.set(0, 2.2, 0);

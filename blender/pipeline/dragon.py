@@ -10,7 +10,7 @@ import bpy
 from mathutils import Vector
 
 from .anim import Animator, Solver, merge
-from .core import Builder, Rig, basis, define, export_glb, glow, link, reset_scene, xform
+from .core import M, Builder, Rig, basis, define, export_glb, glow, link, reset_scene, xform
 
 V = Vector
 
@@ -216,7 +216,7 @@ def membrane_object(rig, side, s):
     me.update()
     for poly in me.polygons:
         poly.use_smooth = True
-    me.materials.append(bpy.data.materials["drg_membrane"])
+    me.materials.append(M("drg_membrane"))
     ob = bpy.data.objects.new("dragon_wing_%s" % side, me)
     link(ob)
     groups = {}
@@ -250,8 +250,8 @@ def build_parts():
     c = B("chest")
     c.sphere(0.62, loc=(0, -0.38, 1.5), scale=(0.9, 1.1, 0.88), m=sc, segs=20, rings=14)
     for s in (-1, 1):
-        c.sphere(0.36, loc=(s * 0.3, -0.72, 1.3), scale=(0.85, 0.9, 1.0), m=sc, segs=14, rings=10)
-        c.sphere(0.3, loc=(s * 0.42, -0.5, 1.52), scale=(0.7, 1.0, 1.0), m=sc, segs=12, rings=8)
+        c.sphere(0.3, loc=(s * 0.26, -0.74, 1.32), scale=(0.85, 0.85, 1.0), m=sc, segs=14, rings=10)
+        c.sphere(0.26, loc=(s * 0.4, -0.5, 1.5), scale=(0.65, 1.0, 1.0), m=sc, segs=12, rings=8)
     c.sphere(0.42, loc=(0, -0.7, 1.12), scale=(0.75, 0.9, 0.45), m=gl, segs=14, rings=8)
     for k in range(5):
         y = -0.2 - k * 0.15
@@ -301,14 +301,14 @@ def build_parts():
                   segs=10, rings=6)
         # horns: two big swept-back, two smaller, cheek spikes
         hd.sweep([hc + V((s * 0.14, 0.1, 0.16)), hc + V((s * 0.25, 0.38, 0.3)),
-                  hc + V((s * 0.28, 0.7, 0.36)), hc + V((s * 0.22, 0.98, 0.5)),
-                  hc + V((s * 0.14, 1.12, 0.66))], [0.09, 0.075, 0.055, 0.03, 0.0], m="drg_horn",
+                  hc + V((s * 0.28, 0.7, 0.3)), hc + V((s * 0.22, 0.98, 0.32)),
+                  hc + V((s * 0.15, 1.16, 0.36))], [0.09, 0.075, 0.055, 0.03, 0.0], m="drg_horn",
                  segs=8)
         hd.sweep([hc + V((s * 0.2, 0.05, 0.04)), hc + V((s * 0.38, 0.3, 0.06)),
                   hc + V((s * 0.48, 0.55, 0.14)), hc + V((s * 0.5, 0.7, 0.26))],
                  [0.06, 0.045, 0.025, 0.0], m="drg_horn", segs=7)
-        hd.sweep([hc + V((s * 0.08, 0.15, 0.17)), hc + V((s * 0.1, 0.38, 0.32)),
-                  hc + V((s * 0.08, 0.55, 0.45))], [0.04, 0.025, 0.0], m="drg_horn", segs=6)
+        hd.sweep([hc + V((s * 0.08, 0.15, 0.17)), hc + V((s * 0.1, 0.38, 0.28)),
+                  hc + V((s * 0.08, 0.58, 0.34))], [0.04, 0.025, 0.0], m="drg_horn", segs=6)
         for k, (ln, zz) in enumerate(((0.26, -0.02), (0.2, -0.1), (0.15, -0.17))):
             hd.cyl(0.035, 0.0, ln, matrix=basis(z=(s * 0.8, 0.6, -0.1 * k), x=(0, 0, 1),
                                                  loc=hc + V((s * 0.21, 0.12, zz))),
@@ -370,8 +370,8 @@ def build_parts():
             big = fb == "B"
             thick = 0.3 if big else 0.24
             u = B(n1)
-            u.sphere(0.44 if big else 0.34, loc=L(P_[0], P_[1], 0.32) + V((s * 0.04, 0, 0.02)),
-                     scale=(0.62, 1.0, 1.15), m=sc, segs=14, rings=10)
+            u.sphere(0.34 if big else 0.26, loc=L(P_[0], P_[1], 0.3) + V((s * 0.02, 0, 0.06)),
+                     scale=(0.6, 0.95, 1.3), m=sc, segs=14, rings=10)
             u.seg(P_[0], P_[1], [(thick, 0), (thick * 1.0, 0.4), (thick * 0.6, 1.0)], m=sc,
                   segs=12)
             u.sphere(thick * 0.62, loc=P_[1], m=sc, segs=10, rings=8)
@@ -500,13 +500,13 @@ def animations(rig):
     coil["chest"] = {"r": (-6, 0, 0)}
     coil.update({"leg_FL_1": {"r": (-25, 0, 0)}, "leg_FL_2": {"r": (-35, 0, 0)},
                  "leg_FL_3": {"r": (25, 0, 0)}})
-    lunge = merge(wings(0.6, 10, 0.3), neck_pose(38, 16, -14, -12, -10, 40), tail_pose(0, -6))
+    lunge = merge(wings(0.6, 10, 0.3), neck_pose(22, 14, -16, -16, -8, 40), tail_pose(0, -6))
     lunge["hips"] = {"l": (0, 0, -0.12), "r": (6, 0, 0)}
     lunge["chest"] = {"r": (12, 0, 0)}
     lunge.update({"leg_FL_1": {"r": (-30, 0, 0)}, "leg_FL_2": {"r": (-10, 0, 0)},
                   "leg_FR_1": {"r": (10, 0, 0)}, "leg_BL_1": {"r": (12, 0, 0)},
                   "leg_BR_1": {"r": (12, 0, 0)}})
-    snap = merge(lunge, neck_pose(40, 18, -14, -12, -14, 0))
+    snap = merge(lunge, neck_pose(24, 15, -16, -16, -10, 0))
     an.keyposes("Attack", [(0, stand), (11, coil), (16, lunge), (19, snap), (30, stand)],
                 ["smooth", "in3", "out", "smooth"])
 
