@@ -3,7 +3,8 @@ import { ENHANCE_TABLE, MAX_PLUS, CRASH_TO, CRASH_CHANCE, FAILSTACK_BONUS, BLESS
 import { GACHA, GACHA_FILLERS, DISMANTLE } from '../data/gacha.js';
 import { WEAPONS } from '../data/weapons.js';
 import { QUESTS } from '../data/quests.js';
-import { masteryEffects, masteryXpToNext, MASTERY_MAX } from '../data/mastery.js';
+import { CLS_MASTERY } from '../data/skilltree.js';
+import { passiveEffects, ensureSkillState } from './skills.js';
 
 export function xpToNext(level) { return Math.round(60 * Math.pow(level, 1.5) + 60); }
 
@@ -21,7 +22,10 @@ export function playerStats(state) {
   const w = equippedWeapon(state);
   const ws = w ? weaponStats(w) : { atk: 0, crit: 0, cdmg: 0, spd: 1 };
   const cls = weaponClass(state);
-  const me = masteryEffects(state, cls);
+  ensureSkillState(state);
+  const mid = CLS_MASTERY[cls];
+  // mastery level of the equipped weapon's mastery adds skill damage; learned passives add the rest
+  const me = { skillPct: (state.mlv[mid] || 0) * 1.0, awaken: new Set(), ...passiveEffects(state) };
   const s = {
     maxHp: 520 + (lv - 1) * 68,
     maxMp: 200 + (lv - 1) * 9,
@@ -37,20 +41,9 @@ export function playerStats(state) {
   s.def = Math.round(s.def * (1 + (me.defPct || 0) / 100));
   s.cls = cls;
   s.mastery = me;
+  s.mid = mid;
   s.cp = Math.round(s.atk * 9 + s.maxHp * 0.6 + s.def * 6 + s.crit * 40 + s.cdmg * 6 + me.skillPct * 60);
   return s;
-}
-
-// returns new level if leveled up
-export function gainMastery(state, cls, xp) {
-  state.mastery = state.mastery || {};
-  const m = state.mastery[cls] || (state.mastery[cls] = { lv: 1, xp: 0 });
-  if (m.lv >= MASTERY_MAX) return 0;
-  m.xp += xp;
-  let up = 0;
-  while (m.lv < MASTERY_MAX && m.xp >= masteryXpToNext(m.lv)) { m.xp -= masteryXpToNext(m.lv); m.lv++; up = m.lv; }
-  if (m.lv >= MASTERY_MAX) m.xp = 0;
-  return up;
 }
 
 export function addItem(state, id, qty) {

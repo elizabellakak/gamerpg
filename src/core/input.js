@@ -16,7 +16,7 @@ export class Input {
       const k = e.key.toLowerCase();
       if (!this.keys.has(k)) this.pressed.add(k);
       this.keys.add(k);
-      if ([' ', 'tab'].includes(k)) e.preventDefault();
+      if ([' ', 'tab', 'f1', 'f2', 'f3', 'f4'].includes(k)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.key.toLowerCase()));
     window.addEventListener('blur', () => this.keys.clear());

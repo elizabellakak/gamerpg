@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { assets } from '../core/assets.js';
 import { WEAPON_BY_ID, ELEMENT, RARITY } from '../data/weapons.js';
-import { KITS, ALL_SKILLS } from '../data/skills.js';
+import { KITS } from '../data/skills.js';
+import { SKILL_INDEX, MASTERY_DEFS } from '../data/skilltree.js';
+import '../data/skills_masteries.js';
+import { skillRuntime, weaponFitsMastery } from '../systems/skills.js';
 import { Trail } from '../fx/trail.js';
 import { AuraController } from '../fx/aura.js';
 import { projectile, aimDir, explosion } from './skills/common.js';
@@ -50,7 +53,6 @@ export class Player {
     this.combo = 0;
     this.queued = false;
     this.cooldowns = {};
-    for (const s of ALL_SKILLS) this.cooldowns[s.id] = 0;
     this.dashCd = 0;
     this.invuln = 0;
     this.hp = 1; this.mp = 1;
@@ -168,7 +170,15 @@ export class Player {
     const holdAttack = input.enabled && (input.mouseDown || input.isDown('attack') || input.isDown('j'));
     let wantAttack = input.wasPressed('mouse0') || input.wasPressed('j') || holdAttack;
     let wantSkill = null;
-    this.kit.skills.forEach((s, i) => { if (input.wasPressed(s.key) || input.wasPressed('skill_' + i)) wantSkill = s; });
+    // hotbar slots 1..0 (current page)
+    const hb = g.state.hotbar;
+    for (let i = 0; i < 10; i++) {
+      if (!(input.wasPressed(i === 9 ? '0' : String(i + 1)) || input.wasPressed('slot_' + i))) continue;
+      const e = hb.pages[hb.page][i];
+      if (!e) continue;
+      if (e.type === 'item') g.usePotion(e.id === 'potion_hp' ? 'hp' : 'mp');
+      else if (e.type === 'skill' && SKILL_INDEX[e.id] && (g.state.slv[e.id] || 0) > 0) wantSkill = skillRuntime(g.state, e.id);
+    }
     const wantDash = input.wasPressed(' ') || input.wasPressed('dash') || input.wasPressed('shift');
 
     const fwdX = -Math.sin(camYaw), fwdZ = -Math.cos(camYaw);
@@ -485,10 +495,14 @@ export class Player {
       const st = g.stats;
       // use skills smartly
       const near = g.combat.monsters.filter((m) => !m.dead && m.position.distanceTo(this.position) < 9).length;
-      for (const s of [...this.kit.skills].reverse()) {
-        if (this.cooldowns[s.id] > 0 || this.mp < this.mpCost(s)) continue;
+      const hb = g.state.hotbar;
+      const list = hb.pages[hb.page].filter((e) => e && e.type === 'skill' && (g.state.slv[e.id] || 0) > 0).map((e) => skillRuntime(g.state, e.id)).reverse();
+      for (const s of list) {
+        if ((this.cooldowns[s.id] || 0) > 0 || this.mp < this.mpCost(s)) continue;
+        if (!weaponFitsMastery(s.mastery, this.cls) || s.kind === 'passive') continue;
         if (s.ult && !(t.tpl.boss || t.maxHp > st.atk * 25 || near >= 4)) continue;
-        if (['gs_whirl', 'sp_twirl', 'ss_aegis'].includes(s.id) && near < 2) continue;
+        if (s.kind === 'aoe_self' && near < 2) continue;
+        if (s.kind === 'buff' && this.buffs && this.buffs[s.id] > 0) continue;
         res.skill = s; break;
       }
     }
@@ -500,7 +514,9 @@ export class Player {
 
   tryCast(s) {
     const g = this.game;
-    if (this.cooldowns[s.id] > 0) return;
+    if (s.kind === 'passive') { g.ui.toast('สกิลติดตัว (Passive) ทำงานอัตโนมัติ', ''); return; }
+    if (!weaponFitsMastery(s.mastery, this.cls)) { g.ui.toast(`ต้องใช้อาวุธสาย ${MASTERY_DEFS[s.mastery].name}`, 'warn'); return; }
+    if ((this.cooldowns[s.id] || 0) > 0) return;
     const cost = this.mpCost(s);
     if (this.mp < cost) { g.ui.toast('MP ไม่พอ!', 'warn'); return; }
     this.mp -= cost;
@@ -512,13 +528,14 @@ export class Player {
     this.faceNearest(14);
     this.yaw = this.targetYaw;
     this.vel.set(0, 0, 0);
-    const h = HANDLERS[s.id];
+    const h = HANDLERS[s.fx];
     if (h && h.start) h.start(this, s, this.skillData);
     g.ui.skillFlash(s);
+    g.ui.hotbarFlash && g.ui.hotbarFlash(s.id);
   }
 
   updateSkill(dt) {
-    const h = HANDLERS[this.skill.id];
+    const h = HANDLERS[this.skill.fx];
     if (h && h.update) h.update(this, dt, this.skill, this.skillData);
     else if (this.stateT > 0.5) this.toMove();
   }
