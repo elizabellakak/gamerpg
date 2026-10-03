@@ -231,10 +231,38 @@ export function portalMaterial(color = 0x7a5cff, color2 = 0x2ef0ff) {
         float a = atan(p.y, p.x);
         float sw = texture2D(uNoise, vec2(a / 6.2831 * 2.0 + r * 1.5 - uTime * 0.3, r * 0.8 - uTime * 0.5)).r;
         float core = smoothstep(1.0, 0.0, r);
-        vec3 col = mix(uColor, uColor2, sw) * (sw * 1.6 + 0.2) * (0.5 + core);
-        col += vec3(1.0) * pow(core, 6.0) * 1.5;
+        vec3 col = mix(uColor, uColor2, sw) * (sw * 0.9 + 0.08) * (0.35 + core * 0.6);
+        col += mix(uColor2, vec3(1.0), 0.5) * pow(core, 8.0) * 0.5;
         float edge = smoothstep(1.0, 0.85, r);
         gl_FragColor = vec4(col * edge, 1.0);
+      }`,
+  });
+}
+
+// Ground burn / crack decal left after big impacts
+export function scorchMaterial(color = 0xff7a20) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    polygonOffset: true, polygonOffsetFactor: -2,
+    uniforms: { uColor: { value: new THREE.Color(color) }, uLife: { value: 1 }, uGlow: { value: 1 }, uNoise: { value: noiseTex() }, uSeed: { value: Math.random() * 10 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `
+      uniform vec3 uColor; uniform float uLife; uniform float uGlow; uniform sampler2D uNoise; uniform float uSeed;
+      varying vec2 vUv;
+      void main(){
+        vec2 p = vUv * 2.0 - 1.0; float r = length(p); if (r > 1.0) discard;
+        float a = atan(p.y, p.x);
+        float n = texture2D(uNoise, vUv * 0.8 + uSeed).r;
+        float burn = smoothstep(1.0, 0.25, r + (n - 0.5) * 0.5);
+        // radial cracks
+        float cr = abs(sin(a * 7.0 + n * 6.0 + uSeed)) ;
+        float crack = smoothstep(0.08, 0.0, cr * (0.4 + r)) * smoothstep(1.0, 0.15, r);
+        float ringCrack = smoothstep(0.03, 0.0, abs(r - 0.45 - (n - 0.5) * 0.2)) * 0.8;
+        float cracks = max(crack, ringCrack);
+        vec3 col = vec3(0.04, 0.03, 0.025) * (1.0 - cracks);
+        col += uColor * cracks * 3.0 * uGlow;
+        float alpha = max(burn * 0.75, cracks) * uLife;
+        gl_FragColor = vec4(col, alpha);
       }`,
   });
 }

@@ -60,8 +60,8 @@ export class AuraController {
     this.handles.push(shell);
     if (hero && t.ground) {
       const c = t.rainbow ? 0xfff2c0 : t.color;
-      this.groundCircle = this.fx.magicCircle(hero.position, { color: c, radius: t.rainbow ? 2.2 : 1.7, duration: Infinity, seed: 3, style: t.rainbow ? 2 : 1, rot: 0.6, follow: hero, y: 0.06, opacity: 0.55 });
-      if (t.rainbow) this.groundCircle2 = this.fx.magicCircle(hero.position, { color: 0xa070ff, radius: 3.0, duration: Infinity, seed: 8, style: 0, rot: -0.3, follow: hero, y: 0.05, opacity: 0.35 });
+      this.groundCircle = this.fx.magicCircle(hero.position, { color: c, radius: t.rainbow ? 1.9 : 1.5, duration: Infinity, seed: 3, style: t.rainbow ? 2 : 1, rot: 0.6, follow: hero, y: 0.06, opacity: 0.32 });
+      if (t.rainbow) this.groundCircle2 = this.fx.magicCircle(hero.position, { color: 0xa070ff, radius: 3.0, duration: Infinity, seed: 8, style: 0, rot: -0.3, follow: hero, y: 0.05, opacity: 0.2 });
     }
     if (hero && plus >= 14) {
       this.heroShell = this.fx.shell(hero, t.color, t.color2, { thickness: 0.015, intensity: t.rainbow ? 0.35 : 0.22, rainbow: t.rainbow ? 1 : 0, flame: 1.2 });

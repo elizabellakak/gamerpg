@@ -600,6 +600,22 @@ class Builder:
         self.add_bmesh(tb, None, None, smooth, angle, mirror,
                        mats=[m_out, m_in, m_edge or m_out])
 
+    def fan(self, pts, m="steel", center=None, smooth=True, angle=60.0, mirror=False, sub=1):
+        """Single-surface polygon (may be non-planar) triangulated as a fan around its centroid.
+        Rely on double-sided materials (Blender default -> glTF doubleSided)."""
+        tb = bmesh.new()
+        pts = [Vector(p) for p in pts]
+        c = Vector(center) if center is not None else sum(pts, Vector()) / len(pts)
+        cv = tb.verts.new(c)
+        vs = [tb.verts.new(p) for p in pts]
+        n = len(vs)
+        for i in range(n):
+            try:
+                tb.faces.new([cv, vs[i], vs[(i + 1) % n]])
+            except ValueError:
+                pass
+        self.add_bmesh(tb, m, None, smooth, angle, mirror)
+
     def gem(self, r, loc=(0, 0, 0), rot=(0, 0, 0), m="glow_cyan", h_top=None, h_bot=None,
             segs=8, mirror=False, matrix=None, table=0.55):
         """Brilliant-cut style gem along Z: crown (with table) + pavilion point."""

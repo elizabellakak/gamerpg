@@ -371,8 +371,8 @@ def moonlight_katana(B):
     grip(B, -0.27, 0.03, 0.017, "white_cloth", "moon_silver", ridges=11)
     B.sphere(0.02, loc=(0, 0, -0.283), scale=(1, 0.75, 0.6), m="moon_silver", segs=10, rings=6)
     B.torus(0.011, 0.002, loc=(0, 0, -0.3), rot=(90, 0, 0), m="glow_moon", segs=10, rsegs=4)
-    B.sweep([(0, 0, -0.31), (0.01, -0.01, -0.37), (0.0, -0.02, -0.44), (0.005, -0.02, -0.48)],
-            [0.004, 0.004, 0.004, 0.0], m="glow_moon", segs=5)
+    B.sweep([(0, 0, -0.31), (0.01, -0.01, -0.35), (0.004, -0.018, -0.39)],
+            [0.004, 0.004, 0.0], m="glow_moon", segs=5)
     B.cyl(0.03, 0.03, 0.008, loc=(0, 0, 0.042), m="moon_silver", segs=20, scale=(1.25, 0.85, 1),
           bevel=0.002, seg=1)
     B.poly(crescent_pts(0.055), 0.007, matrix=xform((0, 0, 0.042), (0, 0, 0)) @ xform(
@@ -524,23 +524,26 @@ def phoenix_wing(B):
     for i, (ang, L) in enumerate(((-12, 0.17), (2, 0.19), (16, 0.16), (30, 0.12), (44, 0.08))):
         feather(B, (0.025, 0, 0.09), ang, L, 0.02, "glow_phoenix_%d" % min(4, i + 1)
                 if i % 2 else "gold", thick=0.008)
-    # feather blade
-    B.blade([(0.1, 0.02, 0.006, 0), (0.6, 0.016, 0.006, 0), (1.1, 0.008, 0.004, 0),
-             (1.22, 0, 0, 0)], m="phoenix_core", edge_m=None)
-    nb = 16
+    # feather blade: solid golden core + overlapping gradient barbs swept toward the tip
+    B.blade([(0.1, 0.03, 0.007, 0), (0.55, 0.034, 0.007, 0), (1.0, 0.018, 0.005, 0),
+             (1.24, 0, 0, 0)], m="phoenix_core", edge_m="glow_phoenix_0", edge_frac=0.7)
+    nb = 24
     for i in range(nb):
         u = i / (nb - 1)
-        z = 0.13 + u * 1.0
-        L = 0.012 + 0.05 * math.sin(math.pi * min(1.0, (u * 0.92 + 0.08))) ** 0.7
+        z = 0.12 + u * 1.02
+        # feather outline: widest ~35% up, tapering to a point
+        L = 0.03 + 0.075 * math.sin(math.pi * min(1.0, 0.12 + u * 0.88)) ** 0.8 * (1 - 0.35 * u)
         mat = "glow_phoenix_%d" % min(4, int(u * 5))
-        ang = 30 + 25 * u
+        ang = 38 + 22 * u
         a = math.radians(ang)
         d = Vector((math.cos(a), 0, math.sin(a)))
-        pts = [(0, -0.008), (L * 0.6, -0.012), (L, 0.004), (L * 0.5, 0.012), (0, 0.01)]
-        B.poly(pts, 0.004, matrix=basis(x=d, z=(0, 1, 0), loc=(0.004, 0, z)), m=mat,
-               mirror=True, smooth=False, thick_fn=lambda x, y, L=L: 0.006 * (1 - 0.7 * x / L))
-    B.cyl(0.004, 0.0015, 1.06, loc=(0, -0.006, 0.64), m="glow_holy", segs=5)
-    B.cyl(0.004, 0.0015, 1.06, loc=(0, 0.006, 0.64), m="glow_holy", segs=5)
+        w = 0.022
+        pts = [(0, -w * 0.6), (L * 0.55, -w * 0.9), (L, -w * 0.1), (L * 0.85, w * 0.5),
+               (L * 0.3, w * 0.8), (0, w * 0.6)]
+        B.poly(pts, 0.005, matrix=basis(x=d, z=(0, 1, 0), loc=(0.012, 0, z)), m=mat,
+               mirror=True, smooth=False, thick_fn=lambda x, y, L=L: 0.008 * (1 - 0.75 * x / L))
+    B.cyl(0.005, 0.0015, 1.08, loc=(0, -0.0075, 0.66), m="glow_holy", segs=5)
+    B.cyl(0.005, 0.0015, 1.08, loc=(0, 0.0075, 0.66), m="glow_holy", segs=5)
     return dict(tip=(0, 0, 1.22), base=(0, 0, 0.12))
 
 

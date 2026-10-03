@@ -236,6 +236,8 @@ export class Player {
         p.y = g.world.heightAt(p.x, p.z);
         g.fx.shockwave(p, { color: this.elColor, radius: 3.5, duration: 0.45 });
         g.fx.debris(p, { count: 12, speed: 7 });
+        g.fx.scorch(p, 1.8, this.elColor, 3);
+        g.engine.ripple(p.clone().setY(p.y + 0.5), 0.6, 1.4, 0.25);
         g.fx.glow.burst(p.clone().setY(p.y + 0.3), 30, { speed: 7, up: 3, life: 0.5, size: 0.4, color: new THREE.Color(this.elColor2), color1: new THREE.Color(this.elColor), drag: 2.5, flat: false });
         g.engine.shake(0.6);
       }
@@ -356,6 +358,7 @@ export class Player {
   start_crescent() {
     this.play('Attack1', { once: true, dur: 0.42, fade: 0.05 });
     this.game.audio.play('slashWave');
+    this.game.engine.ripple(this.position.clone().setY(this.position.y + 1.2), 0.5, 1.5, 0.25);
   }
   update_crescent(dt, s, d) {
     const g = this.game;
@@ -464,6 +467,8 @@ export class Player {
         const top = p.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, 15, (Math.random() - 0.5) * 4));
         g.fx.lightning(top, p, { color: 0x8f7bff, core: 0xf0ecff, width: 0.09, duration: 0.3, segments: 14, jitter: 1.4, branches: 3 });
         g.fx.shockwave(p, { color: 0x9b8bff, radius: 2.4, duration: 0.35 });
+        g.fx.scorch(p, 1.6, 0x9b7bff, 3.5);
+        if (Math.random() < 0.35) g.engine.ripple(p.clone().setY(p.y + 1), 0.5, 1.6, 0.2);
         g.fx.sparks.burst(p.clone().setY(p.y + 0.3), 20, { speed: 10, up: 4, life: 0.35, size: 0.6, color: new THREE.Color(0xffffff), color1: new THREE.Color(0x7b6bff), gravity: 12, drag: 2 });
         g.fx.glow.burst(p.clone().setY(p.y + 0.5), 16, { speed: 4, life: 0.5, size: 0.7, color: new THREE.Color(0xb0a0ff), drag: 3 });
         g.fx.light(p.clone().setY(p.y + 2), 0xa090ff, 60, 0.25, 18);
@@ -559,6 +564,9 @@ export class Player {
     g.engine.doHitStop(0.12);
     g.engine.pulseAberration(1.5);
     g.audio.play('boom'); g.audio.play('thunder');
+    g.engine.ripple(c.clone().setY(c.y + 1), 2.2, 0.75, 0.75);
+    setTimeout(() => g.engine.ripple(c.clone().setY(c.y + 1), 1.2, 0.9, 0.6), 120);
+    g.fx.scorch(c, 9, col, 7);
     g.fx.shockwave(c, { color: 0xffffff, radius: 14, duration: 0.7, width: 0.2 });
     g.fx.shockwave(c, { color: col, radius: 10, duration: 0.9 });
     g.fx.shockwave(c, { color: col2, radius: 6, duration: 1.1 });

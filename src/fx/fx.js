@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ParticleSystem, makeSparkSystem } from './particles.js';
 import {
   arcGeometry, slashMaterial, ringMaterial, pillarMaterial, magicCircleMaterial, tornadoMaterial,
-  decalMaterial, ghostMaterial, basicAdd, globalUniforms, auraShellMaterial,
+  decalMaterial, ghostMaterial, basicAdd, globalUniforms, auraShellMaterial, scorchMaterial,
 } from './materials.js';
 
 const tmpV = new THREE.Vector3();
@@ -231,6 +231,19 @@ export class FX {
       mat.uniforms.uFill.value = Math.min(1, t / duration);
       if (t >= duration && !fired) { fired = true; onDone && onDone(); }
       mat.uniforms.uOpacity.value = t > duration ? 1 - (t - duration) / 0.15 : 1;
+    }, () => { this.scene.remove(m); mat.dispose(); });
+  }
+
+  scorch(pos, radius = 3, color = 0xff7a20, duration = 5) {
+    const mat = scorchMaterial(color);
+    const m = this.mesh(this.planeGeo, mat);
+    m.renderOrder = 1;
+    m.position.set(pos.x, this.heightAt(pos.x, pos.z) + 0.07, pos.z);
+    m.rotation.y = Math.random() * Math.PI * 2;
+    m.scale.set(radius * 2, 1, radius * 2);
+    return this.timed(duration, (k) => {
+      mat.uniforms.uGlow.value = Math.max(0, 1 - k * 2.2);
+      mat.uniforms.uLife.value = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
     }, () => { this.scene.remove(m); mat.dispose(); });
   }
 

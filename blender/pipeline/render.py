@@ -128,10 +128,10 @@ def mesh_points(objs):
     return pts
 
 
-def frame_ortho(cam, objs, margin=1.12):
+def frame_ortho(cam, objs, margin=1.12, points=None):
     """Center + scale an orthographic camera on the objects (keeps its rotation)."""
     bpy.context.view_layer.update()
-    pts = mesh_points(objs)
+    pts = points if points else mesh_points(objs)
     inv = cam.matrix_world.inverted()
     cp = [inv @ p for p in pts]
     xs = [p.x for p in cp]

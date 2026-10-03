@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { assets, instanceProp } from '../core/assets.js';
 import { ZONES } from '../data/monsters.js';
-import { buildTerrain, buildGrass, buildWater, buildSky, buildLava, heightAt, pathDist, rng, LAKE, WORLD_HALF } from './terrain.js';
+import { buildTerrain, buildGrass, buildWater, buildSky, buildLava, heightAt, pathDist, rng, LAKE, WORLD_HALF, SUN_DIR } from './terrain.js';
 import { portalMaterial } from '../fx/materials.js';
 
 const ZC = Object.fromEntries(ZONES.map((z) => [z.id, z]));
@@ -57,24 +57,41 @@ export class World {
   build() {
     const scene = this.scene;
     const q = this.engine.quality;
-    this.fogColor = new THREE.Color(0xcfd9e6);
-    scene.fog = new THREE.Fog(this.fogColor.clone(), 70, 300);
+    this.fogColor = new THREE.Color(0xcfb6a2);
+    scene.fog = new THREE.Fog(this.fogColor.clone(), 45, 280);
     this.sky = buildSky();
     scene.add(this.sky);
+    // image based lighting from the sky -> shiny metals, coloured ambient
+    {
+      const pm = new THREE.PMREMGenerator(this.engine.renderer);
+      const envScene = new THREE.Scene();
+      const skyCopy = new THREE.Mesh(this.sky.geometry, this.sky.material);
+      skyCopy.scale.setScalar(0.08);
+      envScene.add(skyCopy);
+      const groundDisc = new THREE.Mesh(new THREE.CircleGeometry(60, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x3a4628 }));
+      groundDisc.position.y = -4;
+      envScene.add(groundDisc);
+      this.envRT = pm.fromScene(envScene, 0.02);
+      scene.environment = this.envRT.texture;
+      scene.environmentIntensity = 0.75;
+      pm.dispose();
+    }
 
-    this.hemi = new THREE.HemisphereLight(0xcfe6ff, 0x5a4a32, 1.1);
+    this.hemi = new THREE.HemisphereLight(0xbcd2ff, 0x6a5232, 0.55);
     scene.add(this.hemi);
-    const sun = new THREE.DirectionalLight(0xfff0d6, 2.6);
-    sun.position.set(-40, 60, -50);
+    const sun = new THREE.DirectionalLight(0xffd2a0, 3.4);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(q === 'low' ? 1024 : 2048, q === 'low' ? 1024 : 2048);
+    const sm = q === 'low' ? 1024 : 4096;
+    sun.shadow.mapSize.set(sm, sm);
     const sc = sun.shadow.camera;
-    sc.left = -45; sc.right = 45; sc.top = 45; sc.bottom = -45; sc.near = 1; sc.far = 200;
-    sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 0.04;
+    sc.left = -38; sc.right = 38; sc.top = 38; sc.bottom = -38; sc.near = 1; sc.far = 260;
+    sun.shadow.bias = -0.0003;
+    sun.shadow.normalBias = 0.03;
+    sun.shadow.radius = 2.5;
     scene.add(sun, sun.target);
     this.sun = sun;
-    this.sunOffset = sun.position.clone();
+    this.sunOffset = SUN_DIR.clone().multiplyScalar(120);
+    sun.position.copy(this.sunOffset);
 
     this.terrain = buildTerrain(q);
     scene.add(this.terrain);
@@ -391,12 +408,13 @@ export class World {
       const d = Math.hypot(playerPos.x - zl.x, playerPos.z - zl.z);
       const k = 1 - THREE.MathUtils.smoothstep(d, zl.r * 0.8, zl.r * 1.8);
       this.scene.fog.color.copy(this.fogColor).lerp(new THREE.Color(0x3a1510), k);
-      this.scene.fog.far = 300 - k * 170;
-      this.scene.fog.near = 70 - k * 45;
+      this.scene.fog.far = 280 - k * 150;
+      this.scene.fog.near = 45 - k * 25;
       this.sky.material.uniforms.uTint.value.set(0x4a140c);
       this.sky.material.uniforms.uTintAmt.value = k * 0.85;
-      this.hemi.intensity = 1.1 - k * 0.45;
-      this.sun.color.set(0xfff0d6).lerp(new THREE.Color(0xff7a4a), k);
+      this.hemi.intensity = 0.55 - k * 0.2;
+      this.scene.environmentIntensity = 0.75 - k * 0.35;
+      this.sun.color.set(0xffd2a0).lerp(new THREE.Color(0xff6a3a), k);
     }
   }
 }

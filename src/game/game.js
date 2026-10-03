@@ -21,7 +21,7 @@ export class Game {
     this.state = loadState();
     this.time = 0;
     this.mode = 'world';
-    this.cam = { yaw: Math.PI * 0.0, pitch: 0.42, dist: 10.5, targetDist: 10.5 };
+    this.cam = { yaw: 0, pitch: 0.34, dist: 8.5, targetDist: 8.5 };
     this.camLook = new THREE.Vector3();
     this.cine = null;
   }

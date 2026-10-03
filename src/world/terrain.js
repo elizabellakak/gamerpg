@@ -43,6 +43,7 @@ export function pathDist(x, z) {
 }
 
 export const LAKE = { x: 52, z: -48, r: 17 };
+export const SUN_DIR = new THREE.Vector3(-0.42, 0.26, -0.62).normalize();
 
 export function heightAt(x, z) {
   let h = fbm(x * 0.012, z * 0.012, 4) * 9 + fbm(x * 0.05, z * 0.05, 2) * 1.2;
@@ -99,6 +100,36 @@ function groundDetailTex() {
   return t;
 }
 
+function groundNormalTex() {
+  // normal map derived from a noisy heightfield
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  const h = new Float32Array(S * S);
+  for (let i = 0; i < 2200; i++) {
+    const x = Math.random() * S, y = Math.random() * S, r = 1 + Math.random() * 5, v = Math.random();
+    for (let yy = -r; yy <= r; yy++) for (let xx = -r; xx <= r; xx++) {
+      const d = Math.hypot(xx, yy) / r; if (d > 1) continue;
+      const px = ((Math.floor(x + xx) % S) + S) % S, py = ((Math.floor(y + yy) % S) + S) % S;
+      h[py * S + px] += (1 - d * d) * v;
+    }
+  }
+  const img = g.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const hl = h[y * S + ((x - 1 + S) % S)], hr = h[y * S + ((x + 1) % S)];
+    const hu = h[((y - 1 + S) % S) * S + x], hd = h[((y + 1) % S) * S + x];
+    const nx = (hl - hr) * 0.9, ny = (hu - hd) * 0.9;
+    const l = Math.hypot(nx, ny, 1);
+    const i = (y * S + x) * 4;
+    img.data[i] = (nx / l * 0.5 + 0.5) * 255; img.data[i + 1] = (ny / l * 0.5 + 0.5) * 255; img.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(90, 90);
+  t.anisotropy = 8;
+  return t;
+}
+
 export function buildTerrain(quality = 'high') {
   const segs = quality === 'low' ? 150 : 230;
   const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, segs, segs);
@@ -134,7 +165,39 @@ export function buildTerrain(quality = 'high') {
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.computeVertexNormals();
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, map: groundDetailTex() });
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, map: groundDetailTex(), normalMap: groundNormalTex(), normalScale: new THREE.Vector2(0.9, 0.9) });
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uNoise = { value: noiseTex() };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec3 vWPos; uniform sampler2D uNoise;
+      vec2 hash2(vec2 p){ p = vec2(dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3))); return fract(sin(p)*43758.5453); }
+      // returns (edge distance, cell id)
+      vec2 voronoi(vec2 x){ vec2 n = floor(x), f = fract(x); float md = 8.0, md2 = 8.0; vec2 id = vec2(0.0);
+        for(int j=-1;j<=1;j++) for(int i=-1;i<=1;i++){ vec2 g = vec2(float(i),float(j)); vec2 o = hash2(n+g); vec2 r = g + o - f; float d = dot(r,r);
+          if(d<md){ md2 = md; md = d; id = n+g; } else if(d<md2) md2 = d; }
+        return vec2(sqrt(md2) - sqrt(md), hash2(id).x); }`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+      float n1 = texture2D(uNoise, vWPos.xz * 0.013).r;
+      float n2 = texture2D(uNoise, vWPos.xz * 0.11).r;
+      diffuseColor.rgb *= 0.72 + n1 * 0.45;
+      diffuseColor.rgb *= 0.85 + n2 * 0.3;
+      float rr = length(vWPos.xz);
+      float plaza = 1.0 - smoothstep(13.0, 14.5, rr);
+      if (plaza > 0.0) {
+        vec2 v = voronoi(vWPos.xz * 1.5);
+        float mortar = smoothstep(0.03, 0.1, v.x);
+        vec3 stone = mix(vec3(0.55, 0.53, 0.5), vec3(0.74, 0.7, 0.63), v.y) * (0.85 + n2 * 0.3);
+        stone *= 0.78 + 0.3 * smoothstep(0.0, 0.45, v.x);
+        stone = mix(vec3(0.3, 0.28, 0.25), stone, mortar);
+        float ring = smoothstep(0.12, 0.0, abs(rr - 13.0)) + smoothstep(0.1, 0.0, abs(rr - 5.0));
+        stone = mix(stone, vec3(0.85, 0.7, 0.42), ring * 0.8);
+        diffuseColor.rgb = mix(diffuseColor.rgb, stone, plaza);
+      }`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+      roughnessFactor = mix(roughnessFactor, 0.55, (1.0 - smoothstep(13.0, 14.5, length(vWPos.xz))) * 0.8);`);
+  };
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
   mesh.name = 'terrain';
@@ -200,8 +263,8 @@ export function buildGrass(count, isGrassAt) {
     p.set(x, heightAt(x, z), z);
     e.set((r() - 0.5) * 0.3, r() * Math.PI, (r() - 0.5) * 0.3);
     q.setFromEuler(e);
-    const sc = 0.7 + r() * 0.9;
-    s.set(sc, sc * (0.8 + r() * 0.6), sc);
+    const sc = 0.55 + r() * 0.6;
+    s.set(sc, sc * (0.7 + r() * 0.6), sc);
     m.compose(p, q, s);
     im.setMatrixAt(n, m);
     cc.copy(base).lerp(alt, r()).lerp(dark, r() * 0.5);
@@ -262,8 +325,8 @@ export function buildSky() {
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
     uniforms: {
-      uTop: { value: new THREE.Color(0x2a63c9) }, uHorizon: { value: new THREE.Color(0xf6c9a0) }, uBottom: { value: new THREE.Color(0x9fb3c8) },
-      uSunDir: { value: new THREE.Vector3(-0.45, 0.35, -0.6).normalize() }, uTime: globalUniforms.uTime, uNoise: { value: noiseTex() },
+      uTop: { value: new THREE.Color(0x1d4fa8) }, uHorizon: { value: new THREE.Color(0xffb27a) }, uBottom: { value: new THREE.Color(0x6a7a96) },
+      uSunDir: { value: SUN_DIR.clone() }, uTime: globalUniforms.uTime, uNoise: { value: noiseTex() },
       uTint: { value: new THREE.Color(1, 1, 1) }, uTintAmt: { value: 0 },
     },
     vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = projectionMatrix * modelViewMatrix * vec4(position,1.0); gl_Position = p.xyww; }`,
@@ -272,16 +335,19 @@ export function buildSky() {
       varying vec3 vDir;
       void main(){
         float y = vDir.y;
-        vec3 c = y > 0.0 ? mix(uHorizon, uTop, pow(y, 0.55)) : mix(uHorizon, uBottom, pow(-y, 0.4));
+        vec3 mid = mix(uHorizon, uTop, 0.42) * vec3(1.02, 0.97, 0.98);
+        vec3 c = y > 0.0 ? mix(mix(uHorizon, mid, smoothstep(0.0, 0.18, y)), uTop, smoothstep(0.12, 0.85, y)) : mix(uHorizon, uBottom, pow(-y, 0.4));
         float sd = max(0.0, dot(vDir, uSunDir));
-        c += vec3(1.0, 0.85, 0.6) * pow(sd, 8.0) * 0.5 + vec3(1.0, 0.95, 0.85) * pow(sd, 400.0) * 6.0;
+        c += vec3(1.0, 0.6, 0.3) * pow(sd, 6.0) * 0.55 + vec3(1.0, 0.8, 0.55) * pow(sd, 60.0) * 1.2 + vec3(1.0, 0.95, 0.85) * pow(sd, 900.0) * 18.0;
         // clouds
         if (y > 0.02) {
           vec2 uv = vDir.xz / (y + 0.15) * 0.35 + vec2(uTime * 0.004, 0.0);
           float n = texture2D(uNoise, uv).r * 0.6 + texture2D(uNoise, uv * 2.3).r * 0.4;
           float cl = smoothstep(0.5, 0.75, n) * smoothstep(0.02, 0.25, y);
-          vec3 cc = mix(vec3(1.0, 0.92, 0.85), vec3(1.0), y) * (0.85 + pow(sd, 4.0) * 0.4);
-          c = mix(c, cc, cl * 0.75);
+          float edge = smoothstep(0.5, 0.62, n) - smoothstep(0.62, 0.9, n);
+          vec3 cc = mix(vec3(1.0, 0.72, 0.55), vec3(0.95, 0.92, 1.0), smoothstep(0.0, 0.5, y)) * (0.75 + pow(sd, 3.0) * 0.9);
+          cc += vec3(1.0, 0.6, 0.3) * edge * pow(sd, 2.0) * 0.8;
+          c = mix(c, cc, cl * 0.8);
         }
         c = mix(c, uTint, uTintAmt);
         gl_FragColor = vec4(c, 1.0);

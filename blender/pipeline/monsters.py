@@ -36,7 +36,7 @@ def _mats():
     define("drg_membrane", color="#6e1018", rough=0.7)
     define("drg_horn", color="#2b2222", rough=0.35)
     define("drg_claw", color="#e8dcc6", rough=0.4)
-    glow("drg_glow", "#ff6a14", 3.0, color="#ff9a40")
+    glow("drg_glow", "#ff6a14", 4.0, color="#ff9a40")
     glow("drg_eye", "#ffb020", 7.0, color="#fff0a0")
 
 
@@ -717,6 +717,14 @@ def build_dragon():
                   rot=(180, 0, 0), m="drg_claw", segs=4, smooth=False)
     spikes(B, [hc + V((0, 0.1 + 0.15 * i, 0.2 - i * 0.03)) for i in range(3)], [0.16, 0.14, 0.12],
            0.06, lean=(0, 0.8, 0.6))
+    for s in (-1, 1):
+        for k, (ln, ang) in enumerate(((0.32, 10), (0.26, -12), (0.2, -32))):
+            B.poly([(0, -0.04), (ln, 0.0), (0, 0.04)], 0.02,
+                   matrix=basis(x=(s * 0.55, 0.8, math.sin(math.radians(ang))), z=(s * 0.8, -0.55, 0),
+                                loc=hc + V((s * 0.2, 0.15, -0.05 - k * 0.06))),
+                   m=dk, smooth=False)
+        B.box((0.1, 0.28, 0.07), loc=hc + V((s * 0.13, -0.12, 0.17)), rot=(8, 0, s * 8), m=dk,
+              bevel=0.02, seg=1)
     B = P["jaw"]
     B.box((0.3, 0.6, 0.12), loc=(0, -2.27, 2.6), rot=(-14, 0, 0), m=sc, bevel=0.04, seg=1,
           taper=(0.8, 0.95))
@@ -735,6 +743,13 @@ def build_dragon():
         B.seg(p0, p1, [(r0, 0), (r0 * 1.02, 0.4), (r1, 1.0)], m=sc, segs=12, scale=(1.0, 0.9))
         spikes(B, [L(p0, p1, 0.3) + V((0, 0, r0 * 0.85)), L(p0, p1, 0.75) + V((0, 0, r1 * 0.9))],
                [r0 * 0.8, r1 * 0.9], r0 * 0.3, lean=(0, 0.7, 0.7))
+        d_ = (V(p1) - V(p0)).normalized()
+        for t in (0.25, 0.7):
+            q = L(p0, p1, t)
+            B.box((r0 * 1.1, r0 * 1.3, 0.05), matrix=basis(z=d_.cross(V((1, 0, 0))).normalized()
+                                                            * -1, x=(1, 0, 0),
+                                                            loc=q - V((0, 0, r0 * 0.82))),
+                  m="drg_dark", bevel=0.02, seg=1)
     B = P["tail_4"]
     B.poly([(0, 0), (0.25, 0.2), (0.45, 0.0), (0.25, -0.2)], 0.05,
            matrix=basis(x=(0, 1, -0.3), z=(0, 0.3, 1), loc=(0, 3.22, 0.45)), m="drg_horn",
@@ -747,16 +762,25 @@ def build_dragon():
                                  (0.62, 0.62, 0.04)])):
             pts = [V((s * x, y, z)) for x, y, z in segs_]
             n1, n2, n3 = ["leg_%s%s_%d" % (fb, side, i) for i in (1, 2, 3)]
-            thick = 0.28 if fb == "B" else 0.22
+            thick = 0.34 if fb == "B" else 0.26
             P[n1].seg(pts[0] + (pts[0] - pts[1]).normalized() * 0.1, pts[1],
                       [(thick, 0), (thick * 1.05, 0.4), (thick * 0.62, 1.0)], m=sc, segs=10)
             P[n1].sphere(thick * 0.66, loc=pts[1], m=sc, segs=10, rings=8)
+            if fb == "B":
+                P[n1].sphere(0.42, loc=pts[0].lerp(pts[1], 0.35) + V((s * 0.05, 0.05, 0)),
+                             scale=(0.7, 1.0, 1.15), m=sc, segs=14, rings=10)
+            else:
+                P[n1].sphere(0.3, loc=pts[0].lerp(pts[1], 0.3), scale=(0.75, 0.9, 1.15), m=sc,
+                             segs=12, rings=8)
             P[n2].seg(pts[1], pts[2], [(thick * 0.6, 0), (thick * 0.5, 0.6), (thick * 0.42, 1.0)],
                       m=sc, segs=10)
             P[n2].sphere(thick * 0.42, loc=pts[2], m=dk, segs=8, rings=6)
-            ft = pts[3] if fb == "F" else V((s * 0.62, 0.6, 0.04))
-            P[n3].box((thick * 1.2, 0.36, 0.14), loc=V((s * (0.58 if fb == "F" else 0.62),
-                                                      ft.y - 0.0, 0.07)), m=dk, bevel=0.04, seg=1)
+            ft = V((s * 0.58, -0.86, 0.04)) if fb == "F" else V((s * 0.62, 0.6, 0.04))
+            P[n3].box((thick * 1.2, 0.36, 0.14), loc=V((ft.x, ft.y, 0.07)), m=dk, bevel=0.04,
+                      seg=1)
+            if fb == "F":
+                P[n3].seg(pts[2], V((ft.x, ft.y + 0.08, 0.1)), [(thick * 0.42, 0), (thick * 0.4, 1)],
+                          m=sc, segs=8)
             if fb == "B":
                 P[n3].seg(pts[2], V((s * 0.62, 0.75, 0.08)), [(thick * 0.4, 0), (thick * 0.38, 1)],
                           m=sc, segs=8)
@@ -765,35 +789,42 @@ def build_dragon():
                                                           loc=V((s * (0.58 if fb == "F" else 0.62)
                                                                  + k * 0.1, ft.y - 0.2, 0.05))),
                           m="drg_claw", segs=5, smooth=False)
-    # wings
+    # wings: arm bones + three finger struts with scalloped membranes
     for side, s in (("L", 1), ("R", -1)):
-        w1 = [V((s * 0.32, -0.45, 2.0)), V((s * 1.3, -0.25, 2.5))]
-        w2 = [V((s * 1.3, -0.25, 2.5)), V((s * 2.4, 0.25, 2.65))]
-        w3 = [V((s * 2.4, 0.25, 2.65)), V((s * 3.3, 1.0, 2.25))]
-        P["wing_%s_1" % side].seg(w1[0], w1[1], [(0.12, 0), (0.1, 0.5), (0.08, 1)], m=sc, segs=8)
-        P["wing_%s_1" % side].sphere(0.1, loc=w1[1], m=dk, segs=8, rings=6)
-        P["wing_%s_2" % side].seg(w2[0], w2[1], [(0.08, 0), (0.06, 1)], m=sc, segs=8)
-        P["wing_%s_2" % side].sphere(0.07, loc=w2[1], m=dk, segs=8, rings=6)
-        P["wing_%s_2" % side].cyl(0.04, 0.0, 0.2, matrix=basis(z=(0, -0.4, 1), x=(1, 0, 0),
-                                                                loc=w2[1] + V((0, -0.05, 0.12))),
-                                  m="drg_claw", segs=5, smooth=False)
-        P["wing_%s_3" % side].seg(w3[0], w3[1], [(0.055, 0), (0.025, 1)], m=sc, segs=6)
-        # membranes (thin double-sided slabs)
-        trail1 = [w1[0] + V((0, 0.4, -0.15)), V((s * 0.6, 1.1, 1.75)), V((s * 1.2, 1.2, 1.95))]
-        trail2 = [V((s * 1.6, 1.3, 2.05)), V((s * 2.2, 1.45, 2.05)), V((s * 2.6, 1.45, 2.1))]
+        S_ = V((s * 0.32, -0.45, 2.0))
+        E_ = V((s * 1.3, -0.25, 2.5))
+        W_ = V((s * 2.4, 0.25, 2.65))
+        F1 = V((s * 3.3, 1.0, 2.25))
+        F2 = V((s * 3.05, 1.75, 1.85))
+        F3 = V((s * 2.35, 2.0, 1.7))
+        T1 = V((s * 1.25, 1.55, 1.8))
+        T0 = V((s * 0.45, 1.05, 1.75))
+        b1, b2, b3 = ("wing_%s_%d" % (side, i) for i in (1, 2, 3))
+        P[b1].seg(S_, E_, [(0.14, 0), (0.12, 0.5), (0.09, 1)], m=sc, segs=10)
+        P[b1].sphere(0.11, loc=E_, m=dk, segs=10, rings=8)
+        P[b2].seg(E_, W_, [(0.09, 0), (0.07, 0.6), (0.065, 1)], m=sc, segs=10)
+        P[b2].sphere(0.08, loc=W_, m=dk, segs=10, rings=8)
+        P[b2].cyl(0.045, 0.0, 0.24, matrix=basis(z=(s * 0.2, -0.5, 1), x=(1, 0, 0),
+                                                  loc=W_ + V((0, -0.06, 0.14))),
+                  m="drg_claw", segs=5, smooth=False)
+        for tip_, bone, r0 in ((F1, b3, 0.055), (F2, b3, 0.045), (F3, b3, 0.04)):
+            P[bone].seg(W_, tip_, [(r0, 0), (r0 * 0.7, 0.6), (0.012, 1.0)], m=dk, segs=6)
 
-        def membrane(B, outline):
-            c = sum(outline, V()) / len(outline)
-            n = (outline[1] - outline[0]).cross(outline[-1] - outline[0]).normalized()
-            u = (outline[1] - outline[0]).normalized()
-            vv = n.cross(u)
-            pts2 = [((p - c).dot(u), (p - c).dot(vv)) for p in outline]
-            B.poly(pts2, 0.03, matrix=basis(x=u, z=n, loc=c), m="drg_membrane", smooth=True,
-                   angle=80)
-        membrane(P["wing_%s_1" % side], [w1[0], w1[1], trail1[2], trail1[1], trail1[0]])
-        membrane(P["wing_%s_2" % side], [w2[0], w2[1], trail2[2], trail2[1], trail2[0],
-                                         trail1[2]])
-        membrane(P["wing_%s_3" % side], [w3[0], w3[1], V((s * 3.0, 1.35, 2.1)), trail2[2]])
+        def scallop(a, b, depth=0.22, n=4, toward=W_):
+            out = []
+            for k in range(1, n):
+                t = k / n
+                p = a.lerp(b, t)
+                p = p.lerp(toward, depth * math.sin(math.pi * t))
+                out.append(p)
+            return out
+        mem = "drg_membrane"
+        P[b3].fan([W_, F1] + scallop(F1, F2) + [F2] + scallop(F2, F3) + [F3], m=mem,
+                  center=W_.lerp((F1 + F2 + F3) / 3, 0.55))
+        P[b2].fan([E_, W_, F3] + scallop(F3, T1, 0.18, toward=E_) + [T1], m=mem,
+                  center=(E_ + W_ + F3 + T1) / 4)
+        P[b1].fan([S_, E_, T1] + scallop(T1, T0, 0.15, toward=S_) + [T0], m=mem,
+                  center=(S_ + E_ + T1 + T0) / 4)
     rig.attach_builders(P, "dragon")
     an = Animator(rig, Solver(rig))
 
@@ -806,12 +837,12 @@ def build_dragon():
             out["wing_%s_3" % side] = {"r": (0, -s * flap * 0.3, s * 40 * fold * 0.6)}
         return out
 
-    stand = merge(wings(0.55, 10), {"neck_1": {"r": (0, 0, 0)}, "jaw": {"r": (0, 0, 0)}})
+    stand = merge(wings(0.6, -12), {"neck_1": {"r": (0, 0, 0)}, "jaw": {"r": (0, 0, 0)}})
 
     def idle(ph):
         a = 2 * math.pi * ph
         b = math.sin(a)
-        s = merge(wings(0.55 + 0.06 * b, 10 + 6 * b))
+        s = merge(wings(0.6 + 0.05 * b, -12 + 5 * b))
         s.update({"chest": {"r": (1.5 * b, 0, 0), "s": (1 + 0.02 * b, 1, 1 + 0.02 * b)},
                   "hips": {"l": (0, 0, 0.01 * b)},
                   "neck_1": {"r": (3 * b, 0, 4 * math.sin(a + 1))},
@@ -830,7 +861,7 @@ def build_dragon():
         a = 2 * math.pi * ph
         s = trot(ph, amp=24, knee=40, back_sign=-1,
                  phases={"FL": 0.0, "BR": 0.05, "FR": 0.5, "BL": 0.55})
-        s.update(wings(0.75, 5 + 5 * math.sin(2 * a)))
+        s.update(wings(0.7, -10 + 4 * math.sin(2 * a)))
         s.update({"hips": {"l": (0, 0, 0.04 * math.cos(2 * a)), "r": (0, 0, 4 * math.sin(a))},
                   "chest": {"r": (0, 0, -5 * math.sin(a))},
                   "neck_1": {"r": (4 * math.sin(2 * a), 0, 4 * math.sin(a))},

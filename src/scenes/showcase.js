@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { assets } from '../core/assets.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { FX } from '../fx/fx.js';
 import { AuraController } from '../fx/aura.js';
 import { WEAPON_BY_ID, ELEMENT, RARITY } from '../data/weapons.js';
@@ -15,6 +16,13 @@ export class Showcase {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x05060d);
     this.scene.fog = new THREE.FogExp2(0x05060d, 0.035);
+    this.scene.userData.noAO = true;
+    {
+      const pm = new THREE.PMREMGenerator(engine.renderer);
+      this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+      this.scene.environmentIntensity = 0.6;
+      pm.dispose();
+    }
     this.camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 400);
     this.fx = new FX(this.scene, engine);
     this.aura = new AuraController(this.fx);
@@ -164,6 +172,7 @@ export class Showcase {
           fx.glow.burst(center, big ? 220 : 90, { speed: 10, life: 1, lifeVar: 0.6, size: 0.5, color: new THREE.Color(0xffffff), color1: new THREE.Color(c), drag: 1.5 });
           fx.sparks.burst(center, 80, { speed: 14, life: 0.7, size: 0.6, color: new THREE.Color(1, 1, 0.9), color1: new THREE.Color(c), gravity: 4, drag: 1.2 });
           fx.light(center, c, 120, 1.0, 20);
+          e.ripple(center, big ? 1.6 : 0.9, 0.9, 0.6);
           if (big) for (let i = 0; i < 6; i++) setTimeout(() => {
             const p = new THREE.Vector3((Math.random() - 0.5) * 6, 0, (Math.random() - 0.5) * 3 - 1);
             fx.lightning(p.clone().setY(14), p, { color: c, duration: 0.3 });
@@ -266,6 +275,7 @@ export class Showcase {
           a.play(bestOrder >= 3 ? 'bigSuccess' : 'success');
           if (bestOrder >= 3) a.play('choir');
           e.doFlash(0.9, 0xffffff); e.shake(bestOrder >= 4 ? 1.5 : 0.8);
+          e.ripple(new THREE.Vector3(0, 2.4, 0), 2, 0.8, 0.7);
           fx.pillar(new THREE.Vector3(0, 0, 0), { color: c, color2: 0xffffff, radius: 2.2, height: 50, duration: 2.5, speed: 3 });
           fx.shockwave(new THREE.Vector3(0, 0, 0), { color: c, radius: 10, duration: 1 });
           fx.glow.burst(new THREE.Vector3(0, 2.4, 0), 250, { speed: 12, life: 1.2, lifeVar: 0.6, size: 0.55, color: new THREE.Color(0xffffff), color1: new THREE.Color(c), drag: 1.4 });

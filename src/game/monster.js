@@ -207,6 +207,8 @@ export class Monster {
             const p = this.slamPos;
             g.fx.shockwave(p, { color: 0x6fe7ff, radius: 4, duration: 0.5 });
             g.fx.debris(p, { count: 20, speed: 9 });
+            g.fx.scorch(p, 2.6, 0x4adfff, 4);
+            g.engine.ripple(p.clone().setY(p.y + 0.5), 0.8, 1.2, 0.3);
             g.engine.shake(0.5);
             g.audio.play('boom');
             if (Math.hypot(player.position.x - p.x, player.position.z - p.z) < 3.8) player.takeDamage(this.atk * 1.4, { from: this.position });
@@ -292,6 +294,8 @@ export class Monster {
         g.fx.telegraph(this.position, { radius: 8.5, duration: 1.1, onDone: () => {
           g.fx.shockwave(this.position, { color: 0xff6030, radius: 9, duration: 0.5 });
           g.fx.debris(this.position, { count: 30, speed: 12 });
+          g.fx.scorch(this.position, 8, 0xff5a10, 5);
+          g.engine.ripple(this.position.clone().setY(this.position.y + 1), 1.4, 1.0, 0.5);
           g.engine.shake(1); g.audio.play('boom');
           if (Math.hypot(player.position.x - this.position.x, player.position.z - this.position.z) < 8.8) player.takeDamage(this.atk * 1.2, { from: this.position });
         } });
@@ -358,6 +362,8 @@ export class Monster {
       g.fx.shockwave(p, { color: 0xff6a10, radius: R + 1, duration: 0.5 });
       g.fx.glow.burst(p.clone().setY(p.y + 0.5), 50, { speed: 10, up: 4, life: 0.6, size: 1.1, color: fireC2, color1: fireC, drag: 2 });
       g.fx.debris(p, { count: 16, speed: 9 });
+      g.fx.scorch(p, R, 0xff5a10, 6);
+      g.engine.ripple(p.clone().setY(p.y + 0.5), 0.9, 1.2, 0.3);
       g.fx.light(p.clone().setY(p.y + 2), 0xff6a10, 60, 0.4, 16);
       g.engine.shake(0.6);
       g.audio.play('boom');
