@@ -86,9 +86,9 @@ export function pillarMaterial(color, color2 = 0xffffff) {
         float n2 = texture2D(uNoise, vec2(vUv.x * 5.0 + 0.3, vUv.y * 2.0 - uTime * uSpeed * 1.7)).r;
         float v = pow(1.0 - vUv.y, 1.4) * smoothstep(0.0, 0.08, vUv.y);
         float rim = 1.0 - abs(dot(vN, vV));
-        float a = v * (0.35 + n * n2 * 2.2) * (0.4 + rim * 0.9);
+        float a = v * (0.2 + n * n2 * 1.8) * (0.25 + rim * 0.9);
         vec3 col = mix(uColor, uColor2, n2 * v);
-        gl_FragColor = vec4(col * a * uOpacity * 1.6, 1.0);
+        gl_FragColor = vec4(col * a * uOpacity * 1.1, 1.0);
       }`,
   });
 }
