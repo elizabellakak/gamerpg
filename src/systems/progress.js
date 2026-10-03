@@ -6,6 +6,21 @@ import { QUESTS } from '../data/quests.js';
 import { CLS_MASTERY } from '../data/skilltree.js';
 import { passiveEffects, ensureSkillState } from './skills.js';
 
+export const MAX_LEVEL = 130;
+
+// timed buffs (Life Control, Earth Barrier...) on top of the base stats
+export function applyBuffMods(s, mods) {
+  if (!mods) return s;
+  const me = s.mastery;
+  if (mods.skillPct) me.skillPct = (me.skillPct || 0) + mods.skillPct;
+  if (mods.absorb) me.absorb = (me.absorb || 0) + mods.absorb;
+  if (mods.block) me.block = (me.block || 0) + mods.block;
+  if (mods.atkPct) s.atk = Math.round(s.atk * (1 + mods.atkPct / 100));
+  if (mods.defPct) s.def = Math.round(s.def * (1 + mods.defPct / 100));
+  if (mods.hpPct) s.maxHp = Math.max(1, Math.round(s.maxHp * (1 + mods.hpPct / 100)));
+  return s;
+}
+
 export function xpToNext(level) { return Math.round(60 * Math.pow(level, 1.5) + 60); }
 
 export function equippedWeapon(state) {

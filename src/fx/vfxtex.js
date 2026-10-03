@@ -248,3 +248,72 @@ export function tongueTex() {
   }
   return (cache.tongue = new THREE.CanvasTexture(c));
 }
+
+// Thin concentric rings (classic cast circle at the caster's feet)
+export function ringsTex(n = 2) {
+  const key = 'rings' + n;
+  if (cache[key]) return cache[key];
+  const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  g.translate(S / 2, S / 2);
+  g.strokeStyle = '#fff'; g.shadowColor = '#fff';
+  const radii = n === 3 ? [0.97, 0.78, 0.56] : n === 2 ? [0.96, 0.7] : [0.95];
+  for (const r of radii) {
+    g.shadowBlur = 18; g.lineWidth = 7; g.globalAlpha = 0.55; g.beginPath(); g.arc(0, 0, r * S / 2 - 10, 0, Math.PI * 2); g.stroke();
+    g.shadowBlur = 4; g.lineWidth = 3; g.globalAlpha = 1; g.beginPath(); g.arc(0, 0, r * S / 2 - 10, 0, Math.PI * 2); g.stroke();
+  }
+  // faint glyph ticks between the rings
+  g.globalAlpha = 0.5; g.lineWidth = 2; g.shadowBlur = 3;
+  for (let i = 0; i < 36; i++) { g.save(); g.rotate(i / 36 * Math.PI * 2); g.beginPath(); g.moveTo(0, -radii[0] * S / 2 + 18); g.lineTo(0, -radii[0] * S / 2 + 30); g.stroke(); g.restore(); }
+  return (cache[key] = new THREE.CanvasTexture(c));
+}
+
+// filled soft disc (fire trap channel disc, life circle core)
+export function discTex() {
+  if (cache.disc) return cache.disc;
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.75, 'rgba(255,255,255,0.8)'); grd.addColorStop(0.9, 'rgba(255,255,255,1)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, S, S);
+  return (cache.disc = new THREE.CanvasTexture(c));
+}
+
+// double ring with a band of rune glyphs between the rings (Silkroad wizard cast circle)
+export function runeTex(n = 2) {
+  const key = 'rune' + n;
+  if (cache[key]) return cache[key];
+  const S = 512, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  g.translate(S / 2, S / 2);
+  g.strokeStyle = '#fff'; g.fillStyle = '#fff'; g.shadowColor = '#fff';
+  const R = S / 2 - 10;
+  const radii = n === 3 ? [0.97, 0.8, 0.6] : [0.97, 0.76];
+  for (const r of radii) {
+    g.shadowBlur = 16; g.lineWidth = 6; g.globalAlpha = 0.5; g.beginPath(); g.arc(0, 0, r * R, 0, Math.PI * 2); g.stroke();
+    g.shadowBlur = 3; g.lineWidth = 2.6; g.globalAlpha = 1; g.beginPath(); g.arc(0, 0, r * R, 0, Math.PI * 2); g.stroke();
+  }
+  // glyphs: small angular strokes in the band between the outer two rings
+  let seed = 7 + n;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const mid = (radii[0] + radii[1]) / 2 * R, hh = (radii[0] - radii[1]) * R * 0.32;
+  const N = 28;
+  g.lineWidth = 2.2; g.shadowBlur = 4; g.globalAlpha = 0.95;
+  for (let i = 0; i < N; i++) {
+    g.save(); g.rotate(i / N * Math.PI * 2); g.translate(0, -mid);
+    g.beginPath();
+    const k = Math.floor(rnd() * 5);
+    if (k === 0) { g.moveTo(-hh * 0.6, -hh); g.lineTo(0, hh); g.lineTo(hh * 0.6, -hh); }
+    else if (k === 1) { g.moveTo(0, -hh); g.lineTo(0, hh); g.moveTo(-hh * 0.6, -hh * 0.2); g.lineTo(hh * 0.6, -hh * 0.2); }
+    else if (k === 2) { g.arc(0, 0, hh * 0.65, 0.4, Math.PI * 2 - 0.4); g.moveTo(0, -hh); g.lineTo(0, hh); }
+    else if (k === 3) { g.moveTo(-hh * 0.6, hh); g.lineTo(-hh * 0.6, -hh); g.lineTo(hh * 0.6, -hh * 0.3); g.lineTo(-hh * 0.6, hh * 0.2); }
+    else { g.moveTo(-hh * 0.6, -hh); g.lineTo(hh * 0.6, hh); g.moveTo(hh * 0.6, -hh); g.lineTo(-hh * 0.6, hh); }
+    g.stroke(); g.restore();
+  }
+  // inner thin spokes for the 3-ring life circle
+  if (n === 3) {
+    g.globalAlpha = 0.6; g.lineWidth = 1.6;
+    for (let i = 0; i < 12; i++) { g.save(); g.rotate(i / 12 * Math.PI * 2); g.beginPath(); g.moveTo(0, -radii[2] * R); g.lineTo(0, -radii[1] * R); g.stroke(); g.restore(); }
+  }
+  return (cache[key] = new THREE.CanvasTexture(c));
+}

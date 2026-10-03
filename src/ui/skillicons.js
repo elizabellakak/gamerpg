@@ -35,6 +35,23 @@ const DRAW = {
   passive(g) { g.lineWidth = 4; g.beginPath(); g.arc(0, 0, 18, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.moveTo(0, -12); g.lineTo(10, 8); g.lineTo(-10, 8); g.closePath(); g.fill(); },
   heal(g) { g.fillRect(-5, -20, 10, 40); g.fillRect(-20, -5, 40, 10); },
   teleport(g) { g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(0, 0, 6 + i * 6, i * 0.8, i * 0.8 + 4); g.stroke(); } g.beginPath(); g.arc(0, 0, 4, 0, Math.PI * 2); g.fill(); },
+  // wizard set
+  dust(g) { for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; g.beginPath(); g.arc(Math.cos(a) * 17, Math.sin(a) * 9 + 6, 7, 0, Math.PI * 2); g.fill(); } g.globalAlpha = 0.6; g.beginPath(); g.arc(0, 6, 8, 0, Math.PI * 2); g.fill(); },
+  spikes(g) { for (let i = -2; i <= 2; i++) { const h = 30 - Math.abs(i) * 7; g.beginPath(); g.moveTo(i * 10 - 6, 20); g.lineTo(i * 10 + (i % 2) * 2, 20 - h); g.lineTo(i * 10 + 6, 20); g.fill(); } g.fillRect(-28, 20, 56, 5); },
+  root(g) { g.lineWidth = 3.5; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(-16 + i * 8, 24); g.bezierCurveTo(-26 + i * 12, 4, -6 + i * 4, -6, -12 + i * 6, -24); g.stroke(); } g.fillRect(-24, 20, 48, 5); },
+  drain(g) { g.lineWidth = 4; g.beginPath(); g.arc(0, 0, 20, 0.3, Math.PI * 2 - 0.3); g.stroke(); for (let i = 0; i < 6; i++) { g.save(); g.rotate(i * Math.PI / 3); g.beginPath(); g.arc(0, -11, 3, 0, Math.PI * 2); g.fill(); g.restore(); } },
+  stealth(g) { g.globalAlpha = 0.5; g.beginPath(); g.arc(0, -12, 8, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(-14, 26); g.quadraticCurveTo(-14, -2, 0, -2); g.quadraticCurveTo(14, -2, 14, 26); g.fill(); g.globalAlpha = 1; g.lineWidth = 2; g.setLineDash([4, 4]); g.beginPath(); g.arc(0, -12, 11, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); },
+  eye(g) { g.lineWidth = 3.5; g.beginPath(); g.moveTo(-26, 0); g.quadraticCurveTo(0, -24, 26, 0); g.quadraticCurveTo(0, 24, -26, 0); g.stroke(); g.beginPath(); g.arc(0, 0, 8, 0, Math.PI * 2); g.fill(); },
+  trap(g) { g.lineWidth = 3; g.beginPath(); g.ellipse(0, 14, 22, 8, 0, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.moveTo(0, 14); g.bezierCurveTo(-12, 8, -8, -6, -2, -20); g.bezierCurveTo(0, -8, 6, -10, 5, -18); g.bezierCurveTo(14, -6, 12, 8, 0, 14); g.fill(); },
+  stream(g) { g.rotate(-Math.PI / 6); g.beginPath(); g.moveTo(-26, 0); g.lineTo(18, -16); g.quadraticCurveTo(30, 0, 18, 16); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,200,80,0.8)'; g.beginPath(); g.moveTo(-20, 0); g.lineTo(14, -8); g.quadraticCurveTo(20, 0, 14, 8); g.closePath(); g.fill(); },
+  chain(g) { g.lineWidth = 3; g.beginPath(); g.moveTo(-24, -20); g.lineTo(-8, -4); g.lineTo(-14, 0); g.lineTo(4, 10); g.lineTo(-2, 14); g.lineTo(24, 24); g.stroke(); g.beginPath(); g.moveTo(4, 10); g.lineTo(22, -8); g.lineTo(16, -10); g.lineTo(26, -24); g.stroke(); },
+  cloud(g) { for (const [x, y, r] of [[-12, 2, 10], [0, -6, 13], [13, 2, 10], [0, 6, 10]]) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); } g.lineWidth = 3; g.beginPath(); g.moveTo(-4, 14); g.lineTo(-10, 26); g.lineTo(-2, 24); g.lineTo(-6, 32); g.stroke(); },
+  life(g) { g.beginPath(); g.moveTo(0, 22); g.bezierCurveTo(-30, 2, -16, -24, 0, -10); g.bezierCurveTo(16, -24, 30, 2, 0, 22); g.fill(); g.lineWidth = 2.5; g.strokeStyle = 'rgba(120,0,0,0.8)'; g.beginPath(); g.moveTo(-14, 0); g.lineTo(-5, 0); g.lineTo(-1, -8); g.lineTo(3, 8); g.lineTo(7, 0); g.lineTo(14, 0); g.stroke(); },
+  rocket(g) { g.rotate(Math.PI / 4); g.beginPath(); g.moveTo(0, -28); g.lineTo(6, -14); g.lineTo(5, 10); g.lineTo(-5, 10); g.lineTo(-6, -14); g.closePath(); g.fill(); g.globalAlpha = 0.75; g.beginPath(); g.moveTo(-6, 12); g.quadraticCurveTo(0, 34, 6, 12); g.fill(); },
+  crescent(g) { g.beginPath(); g.arc(0, 0, 24, -2.2, 1.0); g.arc(-6, -4, 20, 1.0, -2.2, true); g.fill(); },
+  comet(g) { for (let i = 0; i < 3; i++) { g.save(); g.translate(-10 + i * 10, -8 + i * 8); g.beginPath(); g.arc(0, 0, 4, 0, Math.PI * 2); g.fill(); g.globalAlpha = 0.6; g.beginPath(); g.moveTo(-3, -3); g.lineTo(-14, -14); g.lineTo(3, -1); g.fill(); g.restore(); } },
+  geyser(g) { g.beginPath(); g.moveTo(-8, 24); g.lineTo(-4, -18); g.lineTo(0, -28); g.lineTo(4, -18); g.lineTo(8, 24); g.fill(); g.lineWidth = 3; for (const s of [-1, 1]) { g.beginPath(); g.moveTo(s * 10, 22); g.quadraticCurveTo(s * 22, 0, s * 14, -14); g.stroke(); } },
+  ring(g) { g.lineWidth = 3; g.beginPath(); g.ellipse(0, 8, 24, 10, 0, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.ellipse(0, 8, 14, 6, 0, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.moveTo(0, 8); g.lineTo(-4, -24); g.lineTo(4, -24); g.closePath(); g.fill(); },
 };
 
 export function skillIcon(id, type, color = '#5080e0', tier = 1) {

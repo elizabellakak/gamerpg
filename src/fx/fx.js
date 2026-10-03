@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ParticleSystem, makeSparkSystem } from './particles.js';
 import { SpriteSystem, RockSystem } from './sprites.js';
-import { flipbook, streakTex, starTex, slashTex, spikeBurstTex, swirlTex, novaTex, tongueTex } from './vfxtex.js';
+import { flipbook, streakTex, starTex, slashTex, spikeBurstTex, swirlTex, novaTex, tongueTex, ringsTex, discTex, runeTex } from './vfxtex.js';
 import {
   arcGeometry, slashMaterial, ringMaterial, pillarMaterial, magicCircleMaterial, tornadoMaterial,
   decalMaterial, ghostMaterial, basicAdd, globalUniforms, auraShellMaterial, scorchMaterial, hexShieldMaterial, spiritMaterial, slashMaterial2, shockSphereMaterial,
@@ -85,6 +85,27 @@ export class FX {
     best.intensity = intensity;
   }
 
+  // subdivided ground plane that hugs the terrain (no straight cut lines on slopes); rotation is baked in
+  groundMesh(mat, seg = 12) {
+    const geo = new THREE.PlaneGeometry(1, 1, seg, seg).rotateX(-Math.PI / 2);
+    const base = geo.attributes.position.array.slice();
+    const m = this.mesh(geo, mat);
+    m.conform = (cx, cz, sx, sz, rot = 0, yoff = 0.07) => {
+      const pa = geo.attributes.position.array;
+      const c = Math.cos(rot), s = Math.sin(rot);
+      const cy = this.heightAt(cx, cz);
+      m.position.set(cx, cy, cz);
+      for (let i = 0; i < pa.length; i += 3) {
+        const lx = base[i] * sx, lz = base[i + 2] * sz;
+        const rx = lx * c + lz * s, rz = -lx * s + lz * c;
+        pa[i] = rx; pa[i + 2] = rz; pa[i + 1] = this.heightAt(cx + rx, cz + rz) - cy + yoff;
+      }
+      geo.attributes.position.needsUpdate = true;
+    };
+    m.disposeGeo = () => geo.dispose();
+    return m;
+  }
+
   mesh(geo, mat, parent = this.scene) {
     const m = new THREE.Mesh(geo, mat);
     m.renderOrder = 5;
@@ -103,7 +124,7 @@ export class FX {
   }
 
   // ---------- primitives ----------
-  slash(pos, yaw, { color = 0xffffff, color2 = 0xffffff, radius = 2.6, width = 1.3, angle = Math.PI * 1.1, tilt = 0, flip = false, duration = 0.32, y = 1.1, pitch = 0, sparks = true } = {}) {
+  slash(pos, yaw, { color = 0xffffff, color2 = 0xffffff, radius = 2.6, width = 1.3, angle = Math.PI * 1.1, tilt = 0, flip = false, duration = 0.32, y = 1.1, pitch = 0, sparks = true, gain = 1 } = {}) {
     // layered brush-stroke slash: main arc + offset second layer (depth) + thin core + edge sparks
     const root = new THREE.Object3D();
     root.position.set(pos.x, pos.y + y, pos.z);
@@ -112,10 +133,11 @@ export class FX {
     this.scene.add(root);
     root.updateMatrixWorld(true);
     const layers = [];
+    const gainK = gain;
     const mk = (rIn, rOut, ang, seed, gain, trail, ox, rx) => {
       const geo = arcGeometry(rIn, rOut, ang, 48);
       const mat = slashMaterial2(slashTex(seed), color, color2);
-      mat.uniforms.uGain.value = gain; mat.uniforms.uTrail.value = trail;
+      mat.uniforms.uGain.value = gain * gainK; mat.uniforms.uTrail.value = trail;
       const m = this.mesh(geo, mat, root);
       m.position.y = ox; m.rotation.x = rx;
       if (flip) m.scale.x = -1;
@@ -286,23 +308,21 @@ export class FX {
 
   scorch(pos, radius = 3, color = 0xff7a20, duration = 5) {
     const mat = scorchMaterial(color);
-    const m = this.mesh(this.planeGeo, mat);
+    const m = this.groundMesh(mat, 8);
     m.renderOrder = 1;
-    m.position.set(pos.x, this.heightAt(pos.x, pos.z) + 0.07, pos.z);
-    m.rotation.y = Math.random() * Math.PI * 2;
-    m.scale.set(radius * 2, 1, radius * 2);
+    m.conform(pos.x, pos.z, radius * 2, radius * 2, Math.random() * Math.PI * 2, 0.07);
     return this.timed(duration, (k) => {
       mat.uniforms.uGlow.value = Math.max(0, 1 - k * 2.2);
       mat.uniforms.uLife.value = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
-    }, () => { this.scene.remove(m); mat.dispose(); });
+    }, () => { this.scene.remove(m); mat.dispose(); m.disposeGeo(); });
   }
 
   // Erupting spikes (rock or ice) around a point
-  spikes(pos, { color = 0x6fe7ff, count = 7, radius = 1.4, height = 2.2, duration = 1.4, ice = true } = {}) {
+  spikes(pos, { color = 0x6fe7ff, count = 7, radius = 1.4, height = 2.2, duration = 1.4, ice = true, rock = 0x4a3f36 } = {}) {
     if (!this._spikeGeo) this._spikeGeo = new THREE.ConeGeometry(0.28, 1, 5, 1).translate(0, 0.5, 0);
     const mat = ice
       ? new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.35), emissive: color, emissiveIntensity: 1.6, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.92, flatShading: true })
-      : new THREE.MeshStandardMaterial({ color: 0x4a3f36, emissive: color, emissiveIntensity: 0.0, roughness: 0.9, flatShading: true, transparent: true });
+      : new THREE.MeshStandardMaterial({ color: rock, emissive: color, emissiveIntensity: 0.0, roughness: 0.9, flatShading: true, transparent: true });
     const im = new THREE.InstancedMesh(this._spikeGeo, mat, count);
     im.castShadow = true;
     const data = [];
@@ -541,31 +561,29 @@ export class FX {
     const g = this.planeGeo;
     const mk = (c, seed) => new THREE.MeshBasicMaterial({ map: swirlTex(seed), color: c, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
     const m1 = mk(col(color), 5), m2 = mk(col(color2), 9);
-    const a = this.mesh(g, m1), b = this.mesh(g, m2);
-    const gy = this.heightAt(pos.x, pos.z) + y;
-    a.position.set(pos.x, gy, pos.z); b.position.set(pos.x, gy + 0.02, pos.z);
+    const a = this.groundMesh(m1, 10), b = this.groundMesh(m2, 10);
+    let ra = 0, rb = 0;
     return this.timed(duration, (k, dt) => {
       const e = 1 - Math.pow(1 - k, 2.5);
       const s1 = radius * 2 * (0.45 + e * 0.6), s2 = radius * 2 * (0.3 + e * 0.75);
-      a.scale.set(s1, 1, s1); b.scale.set(s2, 1, s2);
-      a.rotation.y -= dt * spin; b.rotation.y -= dt * spin * 1.4;
+      ra -= dt * spin; rb -= dt * spin * 1.4;
+      a.conform(pos.x, pos.z, s1, s1, ra, y); b.conform(pos.x, pos.z, s2, s2, rb, y + 0.02);
       const f = k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85;
       m1.opacity = f; m2.opacity = f * 0.85;
-    }, () => { this.scene.remove(a); this.scene.remove(b); m1.dispose(); m2.dispose(); });
+    }, () => { this.scene.remove(a); this.scene.remove(b); m1.dispose(); m2.dispose(); a.disposeGeo(); b.disposeGeo(); });
   }
 
   // glowing ground disc with bright expanding rim
-  groundNova(pos, { color = 0xffa030, radius = 4, duration = 0.7 } = {}) {
+  groundNova(pos, { color = 0xffa030, radius = 4, duration = 0.7, opacity = 1 } = {}) {
     const m = new THREE.MeshBasicMaterial({ map: novaTex(), color: col(color), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
-    const mesh = this.mesh(this.planeGeo, m);
-    mesh.position.set(pos.x, this.heightAt(pos.x, pos.z) + 0.1, pos.z);
+    const mesh = this.groundMesh(m, 10);
     this.shockwave(pos, { color, radius: radius * 1.2, duration: duration * 0.8 });
     return this.timed(duration, (k) => {
       const e = 1 - Math.pow(1 - k, 3);
       const s = radius * 2 * (0.35 + e * 0.75);
-      mesh.scale.set(s, 1, s);
-      m.opacity = k < 0.1 ? k / 0.1 : 1 - (k - 0.1) / 0.9;
-    }, () => { this.scene.remove(mesh); m.dispose(); });
+      mesh.conform(pos.x, pos.z, s, s, 0, 0.1);
+      m.opacity = opacity * (k < 0.1 ? k / 0.1 : 1 - (k - 0.1) / 0.9);
+    }, () => { this.scene.remove(mesh); m.dispose(); mesh.disposeGeo(); });
   }
 
   // fan of flame tongues erupting upward
@@ -600,6 +618,44 @@ export class FX {
     });
   }
 
+  // flat textured ground decal (rings / disc / nova). Returns handle with end(); follow keeps it under an object
+  decal(pos, { tex = 'rings2', color = 0xffffff, radius = 1.2, duration = Infinity, follow = null, opacity = 1, spin = 0.6, fadeIn = 0.2, fadeOut = 0.4, grow = 0, additive = true, y = 0.07 } = {}) {
+    const map = tex === 'disc' ? discTex() : tex === 'nova' ? novaTex() : tex === 'swirl' ? swirlTex(5) : tex === 'rune2' ? runeTex(2) : tex === 'rune3' ? runeTex(3) : ringsTex(tex === 'rings3' ? 3 : tex === 'rings1' ? 1 : 2);
+    const m = new THREE.MeshBasicMaterial({ map, color: col(color), transparent: true, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide, opacity: 0 });
+    const mesh = this.groundMesh(m, 12);
+    let t = 0, dur = duration, rot = Math.random() * Math.PI * 2;
+    const place = () => {
+      const p = follow ? follow.position : pos;
+      const s = radius * 2 * (grow ? 0.25 + (1 - Math.exp(-t / grow)) * 0.85 : 1);
+      mesh.conform(p.x, p.z, s, s, rot, y);
+    };
+    place();
+    return this.add({
+      mesh, mat: m,
+      end(after = 0) { dur = Math.min(dur, t + after + fadeOut); },
+      update: (dt) => {
+        t += dt; rot += dt * spin; place();
+        m.opacity = opacity * Math.min(1, t / fadeIn) * Math.min(1, Math.max(0, (dur - t) / fadeOut));
+        return t < dur;
+      },
+      dispose: () => { this.scene.remove(mesh); m.dispose(); mesh.disposeGeo(); },
+    });
+  }
+
+  // thick puffy dust torus expanding from r0 to r1 (earth spells)
+  dustTorus(center, { r0 = 1, r1 = 5, color = 0xe8dcc0, duration = 0.9, count = 30, size = 1.6, alpha = 0.85, height = 0.4 } = {}) {
+    const c = col(color);
+    const gy = this.heightAt(center.x, center.z) + height;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + Math.random() * 0.2;
+      const sp = (r1 - r0) / duration * (0.85 + Math.random() * 0.3);
+      this.smoke.emit(center.x + Math.cos(a) * r0, gy + Math.random() * 0.3, center.z + Math.sin(a) * r0, {
+        vx: Math.cos(a) * sp * 1.6, vy: 0.3, vz: Math.sin(a) * sp * 1.6, life: duration * (1.1 + Math.random() * 0.4),
+        size: size * (0.7 + Math.random() * 0.5), size1: size * 2.4, color: c, color1: c.clone().multiplyScalar(0.85), alpha, alpha1: 0, drag: 1.3, rotV: (Math.random() - 0.5) * 0.6,
+      });
+    }
+  }
+
   // tilted ring orbiting a character (fire ring look)
   orbitRing(follow, { color = 0xff8a20, color2 = 0xffe070, radius = 1.6, duration = 1.2 } = {}) {
     const mat = ringMaterial(color, { noise: true });
@@ -621,14 +677,13 @@ export class FX {
   // expanding dark ground disk (under big explosions)
   darkDisk(pos, { color = 0x3a1040, radius = 6, duration = 1.4 } = {}) {
     const m = new THREE.MeshBasicMaterial({ map: novaTex(), color: col(color), transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide });
-    const mesh = this.mesh(this.planeGeo, m);
+    const mesh = this.groundMesh(m, 10);
     mesh.renderOrder = 1;
-    mesh.position.set(pos.x, this.heightAt(pos.x, pos.z) + 0.06, pos.z);
     return this.timed(duration, (k) => {
       const s = radius * 2 * (0.3 + (1 - Math.pow(1 - k, 3)) * 0.8);
-      mesh.scale.set(s, 1, s);
+      mesh.conform(pos.x, pos.z, s, s, 0, 0.06);
       m.opacity = 0.6 * (k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4);
-    }, () => { this.scene.remove(mesh); m.dispose(); });
+    }, () => { this.scene.remove(mesh); m.dispose(); mesh.disposeGeo(); });
   }
 
   // flames clinging to a target for a while (burn debuff look)

@@ -455,6 +455,7 @@ body.showcase #hud-tl, body.showcase #hud-tr, body.showcase #menu, body.showcase
 .sw-mlv { min-width: 64px; text-align: right; padding: 3px 8px; background: #0c0d10; border: 1px solid #3a3c44; color: #ffd36b; font-weight: bold; }
 .sw-lvup { font: inherit; font-weight: bold; padding: 4px 10px; border-radius: 3px; border: 1px solid #8cc4ff; background: linear-gradient(180deg, #4ba3ff, #1d5fc0); color: #fff; cursor: pointer; text-shadow: 0 1px 1px #000; }
 .sw-lvup.dis { filter: grayscale(.8) brightness(.7); }
+.sw-preset { font: inherit; font-size: 11px; padding: 4px 7px; margin-right: 4px; border-radius: 3px; border: 1px solid #6a6c74; background: linear-gradient(180deg, #4a4c54, #26272c); color: #ddd; cursor: pointer; }
 .sw-grid { background: #0b0c0f; border: 1px solid #3a3c44; padding: 4px; max-height: 330px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .sw-row { display: flex; gap: 4px; align-items: flex-start; padding: 3px; background: linear-gradient(180deg, #17181c, #111215); border: 1px solid #23252b; }
 .sw-rowicon { width: 34px; height: 34px; flex-shrink: 0; background-size: cover; border: 1px solid #000; box-shadow: 0 0 0 1px #8a6a20; filter: sepia(.6) saturate(1.6) hue-rotate(-10deg); }
@@ -493,7 +494,7 @@ body.showcase #hud-tl, body.showcase #hud-tr, body.showcase #menu, body.showcase
 .hb-slot { position: relative; width: 44px; height: 44px; background: linear-gradient(180deg, #0c0d10, #1a1b20); border: 1px solid #000; box-shadow: 0 0 0 1px #4a4c54, inset 0 0 6px #000; cursor: pointer; }
 .hb-ic { position: absolute; inset: 2px; background-size: cover; }
 .hb-cd { position: absolute; inset: 2px; }
-.hb-t { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font: bold 15px Tahoma, sans-serif; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+.hb-t { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font: bold 19px Tahoma, sans-serif; text-shadow: 0 0 3px #000, 0 0 3px #000; }
 .hb-n { position: absolute; right: 2px; bottom: 0; font: bold 11px Tahoma, sans-serif; color: #fff; font-style: normal; text-shadow: 0 0 2px #000, 1px 1px 0 #000; }
 .hb-slot kbd { position: absolute; left: 1px; top: 0; font-size: 9px; background: none; border: none; padding: 0 2px; color: #ffe7a0; text-shadow: 0 0 2px #000, 1px 1px 0 #000; }
 .hb-slot.dim .hb-ic { filter: grayscale(.7) brightness(.55); }
@@ -511,3 +512,31 @@ body.showcase #hud-tl, body.showcase #hud-tr, body.showcase #menu, body.showcase
   #skillwin { transform: scale(.82); transform-origin: top right; }
 }
 @media (max-width: 1150px) { #hotbar { left: 42%; } }
+
+/* buff / debuff icons next to the HP/MP bars (Silkroad style) */
+#buffs { display: flex; gap: 3px; min-height: 0; margin-top: 1px; }
+#buffs .buff { position: relative; width: 22px; height: 22px; border-radius: 3px; background-size: cover; border: 1px solid rgba(255, 230, 160, 0.7); box-shadow: 0 0 4px rgba(0, 0, 0, 0.6); overflow: hidden; pointer-events: auto; cursor: help; }
+#buffs .buff i { position: absolute; left: 0; top: 0; width: 100%; background: rgba(0, 0, 0, 0.55); }
+#buffs .buff.blink { animation: buffBlink 0.8s infinite; }
+@keyframes buffBlink { 50% { opacity: 0.35; } }
+#buff-tip { position: fixed; z-index: 60; max-width: 260px; padding: 8px 10px; background: rgba(12, 22, 48, 0.94); border: 1px solid #6a86c0; border-radius: 4px; color: #dfe8ff; font-size: 12px; line-height: 1.45; pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6); }
+#buff-tip .bt-name { color: #ffe08a; font-weight: 700; }
+#buff-tip .bt-name span { color: #9fd0ff; font-weight: 400; margin-left: 4px; }
+#buff-tip .bt-desc { margin: 4px 0 6px; color: #c8d4f0; }
+#buff-tip .bt-rows div { color: #fff; }
+#buff-tip .bt-time { margin-top: 6px; color: #8affb0; }
+
+/* Silkroad cooldown look: navy cover with countdown, cyan flash when ready (hotbar + skill window) */
+.hb-slot.ready::after, .sw-ic.ready::after { content: ''; position: absolute; inset: 0; background: rgba(120, 240, 255, 0.85); border-radius: 3px; animation: cdReady 0.35s ease-out forwards; pointer-events: none; }
+@keyframes cdReady { from { opacity: 1; } to { opacity: 0; } }
+.sw-ic { position: relative; }
+.sw-ic.cool { filter: grayscale(0.8) brightness(0.45); }
+.sw-ic[data-skill] { cursor: pointer; }
+/* hotbar info block (Silkroad: Skill point / Level / EXP) */
+.hb-info { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 132px; padding: 3px 8px; margin-right: 2px; background: rgba(0, 0, 0, 0.55); border: 1px solid #000; box-shadow: inset 0 0 0 1px #3a3c44; font: 11px Tahoma, sans-serif; color: #eee; }
+.hb-info div { display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+.hb-info span { color: #ffcf5a; }
+.hb-info div:nth-child(2) span { color: #fff; }
+.hb-info em { font-style: normal; color: #6aff7a; }
+.hb-info em b { color: #fff; font-weight: normal; }
+@media (max-width: 1000px) { .hb-info { display: none; } }

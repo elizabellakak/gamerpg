@@ -9,7 +9,7 @@ import { DamageText } from '../ui/dmgtext.js';
 import { UI } from '../ui/ui.js';
 import { audio } from '../core/audio.js';
 import { loadState, saveState } from '../core/save.js';
-import { playerStats, equippedWeapon, xpToNext, addItem, questEvent } from '../systems/progress.js';
+import { playerStats, equippedWeapon, xpToNext, addItem, questEvent, applyBuffMods, MAX_LEVEL } from '../systems/progress.js';
 import { ensureSkillState } from '../systems/skills.js';
 import { CLASSES } from '../data/weapons.js';
 import { LOOT, ZONES } from '../data/monsters.js';
@@ -59,14 +59,15 @@ export class Game {
 
   save() { saveState(this.state); }
 
-  recalcStats() {
+  recalcStats(silent = false) {
     const old = this.stats ? this.stats.cp : 0;
     this.stats = playerStats(this.state);
+    if (this.player) applyBuffMods(this.stats, this.player.buffMods());
     if (this.player) {
       this.player.hp = Math.min(this.player.hp, this.stats.maxHp);
       this.player.mp = Math.min(this.player.mp, this.stats.maxMp);
     }
-    if (old && this.stats.cp !== old) this.ui.cpChange(old, this.stats.cp);
+    if (old && this.stats.cp !== old && !silent) this.ui.cpChange(old, this.stats.cp);
     this.ui.refreshAll();
   }
 
@@ -177,7 +178,7 @@ export class Game {
     const s = this.state;
     s.xp += xp;
     let leveled = false;
-    while (s.xp >= xpToNext(s.level) && s.level < 60) {
+    while (s.xp >= xpToNext(s.level) && s.level < MAX_LEVEL) {
       s.xp -= xpToNext(s.level);
       s.level++;
       leveled = true;

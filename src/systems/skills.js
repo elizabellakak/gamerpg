@@ -36,6 +36,9 @@ export function levelUpMastery(s, m) {
   return { ...info, ok: true, newLv: s.mlv[m] };
 }
 
+// previous skill of the line must reach this level first (Silkroad: e.g. Nachal needs Chain Spear - Tiger Lv 9)
+export function prevNeed(sk) { return sk.prevLv ?? Math.min(SKILL_INDEX[sk.prev].max, 9); }
+
 export function skillUpInfo(s, id) {
   const sk = SKILL_INDEX[id];
   const lv = s.slv[id] || 0;
@@ -45,7 +48,7 @@ export function skillUpInfo(s, id) {
   const cost = skillCost(sk, next);
   let reason = null;
   if ((s.mlv[sk.mastery] || 0) < req) reason = `ต้องการ ${MASTERY_DEFS[sk.mastery].name} มาสเตอรี่ Lv ${req}`;
-  else if (sk.prev && !(s.slv[sk.prev] > 0)) reason = `ต้องเรียน ${SKILL_INDEX[sk.prev].name} ก่อน`;
+  else if (sk.prev && lv === 0 && (s.slv[sk.prev] || 0) < prevNeed(sk)) reason = `ต้องการ ${SKILL_INDEX[sk.prev].name} Lv ${prevNeed(sk)}`;
   else if (s.sp < cost) reason = `Skill point ไม่พอ (ต้องการ ${cost.toLocaleString()})`;
   return { lv, next, req, cost, ok: !reason, reason };
 }
@@ -84,3 +87,5 @@ export function passiveEffects(s) {
 }
 
 export function weaponFitsMastery(mastery, cls) { return MASTERY_DEFS[mastery].weapon.includes(cls); }
+// per-skill weapon requirement (Warrior: one-handed rows need a sword, axe rows a two-handed weapon)
+export function skillFitsWeapon(s, cls) { return (s.weapon || MASTERY_DEFS[s.mastery].weapon).includes(cls); }

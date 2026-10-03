@@ -135,7 +135,13 @@ export class Monster {
     }
 
     if (this.slow > 0) this.slow -= dt;
-    if (this.stun > 0) {
+    // knocked down (Bicheon Blade Force): lies on its back, no action
+    if (this.down > 0) this.downTilt = Math.min(1, (this.downTilt || 0) + dt * 7);
+    else if (this.downTilt > 0) this.downTilt = Math.max(0, this.downTilt - dt * 3);
+    if (this.down > 0) {
+      this.down -= dt;
+      this.vel.multiplyScalar(Math.pow(0.02, dt));
+    } else if (this.stun > 0) {
       this.stun -= dt;
       this.vel.multiplyScalar(Math.pow(0.05, dt));
       if (Math.random() < dt * 8) {
@@ -144,6 +150,7 @@ export class Monster {
       }
     } else if (this.tpl.boss) this.updateBoss(dt, distP);
     else this.updateNormal(dt, distP);
+    if (this.root > 0) { this.root -= dt; this.vel.x = 0; this.vel.z = 0; }
     if (this.slow > 0) {
       this.vel.multiplyScalar(Math.pow(0.15, dt));
       if (Math.random() < dt * 4) g.fx.glow.emit(this.position.x + (Math.random() - 0.5), this.position.y + Math.random() * this.tpl.height, this.position.z + (Math.random() - 0.5), 0, 0.5, 0, 0.6, 0.3, SLOW_COL, { drag: 1 });
@@ -159,6 +166,7 @@ export class Monster {
     if (dz > z.r * 1.3) { this.position.x = z.x + (this.position.x - z.x) / dz * z.r * 1.3; this.position.z = z.z + (this.position.z - z.z) / dz * z.r * 1.3; }
     this.position.y = g.world.heightAt(this.position.x, this.position.z);
     this.obj.rotation.y = this.yaw;
+    if (this.downTilt > 0 || this.obj.rotation.x) { this.obj.rotation.order = 'YXZ'; this.obj.rotation.x = -(this.downTilt || 0) * 1.35; }
     if (distP < 70) this.mixer.update(dt);
 
     // hp bar
@@ -180,7 +188,7 @@ export class Monster {
   updateNormal(dt, distP) {
     const g = this.game, player = g.player, tpl = this.tpl;
     this.atkCd -= dt;
-    const canSee = !player.dead && (distP < tpl.aggro || (this.aggro && distP < tpl.aggro * 2.2));
+    const canSee = !player.dead && !player.hiddenFrom(distP) && (distP < tpl.aggro || (this.aggro && distP < tpl.aggro * 2.2));
     switch (this.state) {
       case 'idle':
         this.play('Idle');

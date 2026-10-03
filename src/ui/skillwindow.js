@@ -1,8 +1,8 @@
 // Silkroad-style skill window (tabs, mastery header with LEVEL UP, rows of skill icons with level + ADD/MAX)
 // and the bottom hotbar (10 slots x 4 pages, F1-F4) with drag & drop placement.
-import { TABS, MASTERY_DEFS, ROWS, SKILL_INDEX, masteryCap, skillReqMastery, skillCost, skillMult, skillMp } from '../data/skilltree.js';
+import { TABS, MASTERY_DEFS, ROWS, SKILL_INDEX, masteryCap, skillReqMastery, skillCost, skillMult, skillMp, HOTBAR_PRESETS } from '../data/skilltree.js';
 import '../data/skills_masteries.js';
-import { masteryTotal, masteryUpInfo, levelUpMastery, skillUpInfo, levelUpSkill, HOTBAR_SLOTS } from '../systems/skills.js';
+import { masteryTotal, masteryUpInfo, levelUpMastery, skillUpInfo, levelUpSkill, HOTBAR_SLOTS, prevNeed, skillRuntime } from '../systems/skills.js';
 import { skillIcon } from './skillicons.js';
 import { iconUrl } from '../core/assets.js';
 import { ITEMS } from '../data/weapons.js';
@@ -52,7 +52,8 @@ export class SkillWindow {
     const mlv = s.mlv[m] || 0;
     const up = masteryUpInfo(s, m);
     const rows = ROWS[m] || [];
-    const cols = Math.max(7, ...rows.map((r) => r.tiers.length));
+    const colOf = (r, c) => SKILL_INDEX[`${m}_${r + 1}_${c + 1}`].col;
+    const cols = Math.max(5, ...rows.map((row, r) => Math.max(...row.tiers.map((_, c) => colOf(r, c))) + 1));
     this.el.innerHTML = `
       <div class="sw-title"><span>สกิล · Skill</span><button class="sw-x">✕</button></div>
       <div class="sw-tabs">${TABS.map((t) => `<button class="sw-tab ${t.id === this.tab ? 'on' : ''}" data-tab="${t.id}">${t.name}</button>`).join('')}</div>
@@ -61,14 +62,15 @@ export class SkillWindow {
         <div class="sw-mic" style="background-image:url(${skillIcon('m_' + m, { bicheon: 'blade', heuksal: 'thrust', pacheon: 'arrow', warrior: 'quake', wizard: 'fire' }[m], { bicheon: '#a04040', heuksal: '#4060c0', pacheon: '#408040', warrior: '#a07030', wizard: '#7040b0' }[m])})"></div>
         <div class="sw-mname">${md.name} Mastery <small>${md.th}</small></div>
         <div class="sw-mlv">Lv ${mlv}</div>
+        <button class="sw-preset" title="วางสกิลที่เรียนแล้วลงแถบสกิล F1/F2 ตามคลิปต้นฉบับ">จัดแถบ</button>
         <button class="sw-lvup ${up.ok ? '' : 'dis'}" title="${up.ok ? 'ใช้ ' + fmt(up.cost) + ' SP' : up.reason}">LEVEL UP</button>
       </div>
       <div class="sw-grid">${rows.map((row, r) => `
         <div class="sw-row">
           <div class="sw-rowicon" title="${row.desc}" style="background-image:url(${skillIcon('row_' + m + r, row.icon, '#806020')})"></div>
-          ${Array.from({ length: cols }, (_, c) => {
-            const t = row.tiers[c];
-            if (!t) return '<div class="sw-cell empty"><div class="sw-ic lock"></div><div class="sw-btn none"></div></div>';
+          ${Array.from({ length: cols }, (_, cc) => {
+            const c = row.tiers.findIndex((_, i) => colOf(r, i) === cc);
+            if (c < 0) return '<div class="sw-cell empty"><div class="sw-ic lock"></div><div class="sw-btn none"></div></div>';
             const id = `${m}_${r + 1}_${c + 1}`;
             const lv = s.slv[id] || 0;
             const info = skillUpInfo(s, id);
@@ -82,6 +84,25 @@ export class SkillWindow {
     this.el.querySelector('.sw-x').onclick = () => this.close();
     this.el.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { this.tab = b.dataset.tab; this.sub = TABS.find((t) => t.id === this.tab).subs[0]; audio.play('click'); this.render(); });
     this.el.querySelectorAll('[data-sub]').forEach((b) => b.onclick = () => { this.sub = b.dataset.sub; audio.play('click'); this.render(); });
+    this.el.querySelector('.sw-preset').onclick = () => {
+      const pre = HOTBAR_PRESETS[m] || [];
+      const byFx = {};
+      for (const sk of Object.values(SKILL_INDEX)) if (sk.mastery === m) byFx[sk.fx] = sk.id;
+      let n = 0;
+      pre.forEach((pageList, pi) => {
+        if (!pageList.length) return;
+        const page = this.s.hotbar.pages[pi];
+        pageList.forEach((fx, i) => {
+          if (fx === 'hp' || fx === 'mp') { page[i] = { type: 'item', id: fx === 'hp' ? 'potion_hp' : 'potion_mp' }; return; }
+          const id = byFx[fx];
+          page[i] = id && (this.s.slv[id] || 0) > 0 ? { type: 'skill', id } : null;
+          if (page[i]) n++;
+        });
+      });
+      audio.play('click');
+      this.ui.toast(n ? `วางสกิล ${n} ช่องบนแถบ F1/F2 แล้ว` : 'ยังไม่ได้เรียนสกิลของสายนี้', n ? 'good' : 'warn');
+      this.game.save(); this.ui.renderHotbar();
+    };
     this.el.querySelector('.sw-lvup').onclick = () => {
       const r = levelUpMastery(this.s, m);
       if (!r.ok) { audio.play('fail'); this.ui.toast(r.reason, 'warn'); return; }
@@ -100,7 +121,16 @@ export class SkillWindow {
     this.el.querySelectorAll('.sw-ic[data-skill]').forEach((ic) => {
       ic.onpointerenter = () => this.showTip(ic.dataset.skill, ic);
       ic.onpointerleave = () => this.hideTip();
-      ic.onpointerdown = (e) => { if ((this.s.slv[ic.dataset.skill] || 0) > 0) this.startDrag(e, { type: 'skill', id: ic.dataset.skill }, null); };
+      ic.onpointerdown = (e) => {
+        const id = ic.dataset.skill;
+        if (!((this.s.slv[id] || 0) > 0)) return;
+        e.preventDefault();
+        const p0 = [e.clientX, e.clientY];
+        const onMove = (ev) => { if (Math.hypot(ev.clientX - p0[0], ev.clientY - p0[1]) > 8) { off(); this.startDrag(ev, { type: 'skill', id }, null); } };
+        const onUp = () => { off(); this.cast(id); };
+        const off = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp);
+      };
     });
   }
 
@@ -110,19 +140,19 @@ export class SkillWindow {
     const info = skillUpInfo(s, id);
     let tip = document.getElementById('sw-tip');
     if (!tip) { tip = document.createElement('div'); tip.id = 'sw-tip'; document.getElementById('ui').appendChild(tip); }
-    const kindTh = { attack: 'สกิลโจมตี', aoe_self: 'สกิลโจมตีรอบตัว', buff: 'สกิลบัฟ', passive: 'สกิลติดตัว (Passive)', imbue: 'สกิลเสริมพลังอาวุธ' }[sk.kind] || 'สกิล';
+    const kindTh = { attack: 'สกิลโจมตี', aoe_self: 'สกิลโจมตีรอบตัว', buff: 'สกิลบัฟ', passive: 'สกิลติดตัว (Passive)', imbue: 'สกิลเสริมพลังอาวุธ', debuff: 'สกิลสถานะผิดปกติ', trap: 'สกิลวางกับดัก', util: 'สกิลสนับสนุน' }[sk.kind] || 'สกิล';
     tip.innerHTML = `
       <div class="tt-name">${sk.name}${lv ? ` <span>Lv ${lv}</span>` : ''}</div>
       ${sk.th ? `<div class="tt-th">${sk.th}</div>` : ''}
-      <div class="tt-kind">${kindTh} · ${MASTERY_DEFS[sk.mastery].name}</div>
+      <div class="tt-kind">${kindTh} · ${MASTERY_DEFS[sk.mastery].name}${sk.element ? ' · ' + sk.element : ''}</div>
       <div class="tt-desc">${sk.desc}</div>
-      ${sk.kind !== 'passive' ? `<div class="tt-row">พลังโจมตี <b>${Math.round(skillMult(sk, show) * 100)}%</b>${sk.hits > 1 ? ` · ${sk.hits} ครั้ง` : ''}</div>
+      ${sk.kind !== 'passive' ? `${sk.dmg > 0 ? `<div class="tt-row">พลังโจมตี <b>${Math.round(skillMult(sk, show) * 100)}%</b>${sk.hits > 1 ? ` · ${sk.hits} ครั้ง` : ''}</div>` : ''}
       <div class="tt-row">MP <b>${skillMp(sk, show)}</b> · คูลดาวน์ <b>${sk.cd}s</b></div>` : ''}
       ${info.max ? '<div class="tt-ok">เลเวลสูงสุดแล้ว (MAX)</div>' : `
       <div class="tt-next">เลเวลถัดไป: Lv ${info.next}</div>
       <div class="tt-row ${s.mlv[sk.mastery] >= info.req ? '' : 'bad'}">ต้องการมาสเตอรี่ ${MASTERY_DEFS[sk.mastery].name} Lv ${info.req}</div>
       <div class="tt-row ${s.sp >= info.cost ? '' : 'bad'}">Skill point needed <b>${fmt(info.cost)}</b></div>
-      ${sk.prev && !(s.slv[sk.prev] > 0) ? `<div class="tt-row bad">ต้องเรียน ${SKILL_INDEX[sk.prev].name} ก่อน</div>` : ''}`}
+      ${sk.prev && !lv && (s.slv[sk.prev] || 0) < prevNeed(sk) ? `<div class="tt-row bad">Required skill: ${SKILL_INDEX[sk.prev].name} Lv ${prevNeed(sk)}</div>` : ''}`}
       ${lv ? '<div class="tt-hint">ลากไปวางบนแถบสกิล</div>' : ''}`;
     const r = anchor.getBoundingClientRect();
     tip.style.display = 'block';
@@ -132,6 +162,24 @@ export class SkillWindow {
     tip.style.left = x + 'px'; tip.style.top = y + 'px';
   }
   hideTip() { const t = document.getElementById('sw-tip'); if (t) t.style.display = 'none'; }
+
+  // cast straight from the window (Silkroad players mostly click skills here)
+  cast(id) {
+    const pl = this.game.player;
+    if (pl.state !== 'move' && !(pl.state === 'attack')) return;
+    pl.tryCast(skillRuntime(this.s, id));
+  }
+
+  // grey + countdown on window icons while a skill (or its group) cools down
+  tick() {
+    if (!this.el) return;
+    const pl = this.game.player;
+    this.el.querySelectorAll('.sw-ic[data-skill]').forEach((ic) => {
+      const cd = pl.cooldowns[ic.dataset.skill] || 0;
+      const on = cd > 0;
+      if (on !== ic.classList.contains('cool')) { if (!on) { ic.classList.remove('ready'); void ic.offsetWidth; ic.classList.add('ready'); } ic.classList.toggle('cool', on); }
+    });
+  }
 
   // ---------------- drag & drop ----------------
   startDrag(e, entry, fromSlot) {
@@ -171,7 +219,7 @@ export class SkillWindow {
 
 // ---------------- hotbar ----------------
 export function hotbarHTML() {
-  return `<div id="hotbar"><div class="hb-page"><button data-pg="-1">▲</button><b id="hb-pg">I</b><button data-pg="1">▼</button></div>
+  return `<div id="hotbar"><div class="hb-info"><div><span>Skill point</span><b id="hb-sp">0</b></div><div><span>Level: <b id="hb-lv">1</b></span><em>EXP <b id="hb-exp">0</b> %</em></div></div><div class="hb-page"><button data-pg="-1">▲</button><b id="hb-pg">F1</b><button data-pg="1">▼</button></div>
     <div class="hb-slots">${KEYS.map((k, i) => `<div class="hb-slot" data-slot="${i}"><div class="hb-ic"></div><div class="hb-cd"></div><b class="hb-t"></b><i class="hb-n"></i><kbd>${k}</kbd></div>`).join('')}</div></div>`;
 }
 
@@ -202,7 +250,7 @@ export function bindHotbar(ui) {
 
 export function renderHotbar(ui) {
   const g = ui.game, hb = g.state.hotbar;
-  document.getElementById('hb-pg').textContent = ROMAN[hb.page];
+  document.getElementById('hb-pg').textContent = 'F' + (hb.page + 1);
   ui.hbSlots.forEach((it, i) => {
     const e = hb.pages[hb.page][i];
     it.entry = e;
@@ -222,10 +270,13 @@ export function updateHotbar(ui) {
     const sk = SKILL_INDEX[e.id];
     const cd = pl.cooldowns[e.id] || 0;
     const max = sk.cd * (1 - (pl.mastery.cdr || 0) / 100);
-    it.cd.style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,.75) ${(cd / max) * 360}deg, transparent 0)` : 'transparent';
-    const txt = cd > 0 ? String(cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '';
-    if (txt !== it.last) { it.t.textContent = txt; it.last = txt; }
+    it.cd.style.background = cd > 0 ? 'rgba(12, 22, 64, 0.82)' : 'transparent';
+    const txt = cd > 0 ? String(Math.ceil(cd - 0.05)) : '';
+    if (txt !== it.last) {
+      if (it.last && !txt) { it.el.classList.remove('ready'); void it.el.offsetWidth; it.el.classList.add('ready'); }
+      it.t.textContent = txt; it.last = txt;
+    }
     const usable = (g.state.slv[e.id] || 0) > 0 && pl.weaponDef && sk && pl.cls && (sk.kind === 'passive' || (pl.mp >= skillMp(sk, g.state.slv[e.id] || 1)));
-    it.el.classList.toggle('dim', !usable || !(SKILL_INDEX[e.id] && pl.cls && MASTERY_DEFS[sk.mastery].weapon.includes(pl.cls)));
+    it.el.classList.toggle('dim', !usable || !(SKILL_INDEX[e.id] && pl.cls && (sk.weapon || MASTERY_DEFS[sk.mastery].weapon).includes(pl.cls)));
   }
 }

@@ -114,6 +114,48 @@ def sword_shield(an):
     an.keyposes("SS_Block", [(0, idle), (4, brace), (13, brace2), (18, idle)],
                 ["out", "smooth", "smooth"])
 
+    # --- Bicheon (Silkroad) skill moves ---
+    def pose(grip, blade, bend=16, back=8, spine=(6, 0, 4), chest=(2, 0, 6), drop=0.0, L=None, cape_=(0, 0)):
+        s = merge(legs(bend, 7, back=back), cape(*cape_), {
+            "spine": {"r": spine}, "chest": {"r": chest}, "head": {"r": (-4, 0, -spine[2])},
+            "ikR": ik(grip, blade, pole=(-0.5, 0.5, -0.7)), "ikL": L or guard_L})
+        if drop:
+            s["hips"]["l"] = (0, 0, s["hips"]["l"][2] - drop)
+        return s
+    # overhead chop -> diagonal downward slash
+    up = pose((-0.22, 0.0, 1.62), (0.2, 0.5, 0.84), bend=12, spine=(-4, 0, 8))
+    down = pose((-0.12, -0.5, 0.95), (0.5, -0.7, -0.5), bend=26, back=12, spine=(18, 0, -10), chest=(6, 0, -12), drop=0.05)
+    an.keyposes("SS_Chop", [(0, idle), (5, up), (9, down), (12, down), (18, idle)], ["smooth", "in3", "linear", "smooth"])
+    # deep lunge thrust held
+    pull = pose((-0.34, 0.2, 1.1), (0.0, -1, 0.05), bend=18, spine=(4, 0, 16), chest=(0, 0, 18))
+    lunge = merge(cape(-8, -6), {
+        "hips": {"l": (0, 0, -0.24)}, "spine": {"r": (22, 0, 8)}, "chest": {"r": (6, 0, 6)}, "head": {"r": (-20, 0, -10)},
+        "thigh_L": {"r": (-60, -6, 0)}, "shin_L": {"r": (70, 0, 0)}, "foot_L": {"r": (-10, 6, 0)},
+        "thigh_R": {"r": (36, 8, 0)}, "shin_R": {"r": (30, 0, 0)}, "foot_R": {"r": (-40, -6, 0)},
+        "ikR": ik((-0.14, -0.78, 1.0), (0.0, -1, 0.02), pole=(-0.5, 0.5, -0.7)), "ikL": shield((0.06, -0.12, 1.1))})
+    an.keyposes("SS_Lunge", [(0, idle), (5, pull), (8, lunge), (16, lunge), (24, idle)], ["smooth", "in3", "linear", "smooth"])
+    # crouch -> huge rising uppercut
+    low = pose((-0.2, 0.25, 0.62), (-0.2, 0.6, -0.75), bend=40, back=14, spine=(26, 0, 12), drop=0.18)
+    rise = pose((-0.16, -0.36, 1.7), (0.0, -0.3, 0.95), bend=8, spine=(-8, 0, -6), chest=(-4, 0, -8))
+    an.keyposes("SS_Upper", [(0, idle), (6, low), (10, rise), (14, rise), (22, idle)], ["smooth", "in3", "linear", "smooth"])
+    # leap, plunge, sword stabbed into the ground
+    tuck = pose((-0.14, -0.05, 1.75), (0.0, 0.3, 0.95), bend=34, spine=(-6, 0, 0))
+    tuck["hips"]["l"] = (0, 0, tuck["hips"]["l"][2] + 0.6)
+    stab = pose((-0.1, -0.5, 0.75), (0.0, -0.2, -1), bend=44, back=18, spine=(30, 0, 0), chest=(8, 0, 0), drop=0.25)
+    an.keyposes("SS_Plunge", [(0, idle), (4, low), (9, tuck), (13, tuck), (16, stab), (26, stab), (34, idle)],
+                ["smooth", "out", "linear", "in3", "linear", "smooth"])
+    # kneel and gather (sword planted), used by Blade Force
+    kneel = merge(cape(4, 2), {
+        "hips": {"l": (0, 0, -0.42)}, "spine": {"r": (16, 0, 0)}, "chest": {"r": (4, 0, 0)}, "head": {"r": (-10, 0, 0)},
+        "thigh_L": {"r": (-80, 0, 0)}, "shin_L": {"r": (85, 0, 0)}, "foot_L": {"r": (-5, 0, 0)},
+        "thigh_R": {"r": (5, 6, 0)}, "shin_R": {"r": (95, 0, 0)}, "foot_R": {"r": (-50, 0, 0)},
+        "ikR": ik((-0.22, -0.42, 0.6), (0.0, -0.4, -0.9), pole=(-0.5, 0.5, -0.7)), "ikL": shield((0.0, -0.3, 0.9))})
+    an.keyposes("SS_Kneel", [(0, idle), (6, kneel), (24, kneel), (30, idle)], ["smooth", "linear", "smooth"])
+    # overhead fling (Sword Dance)
+    cock = pose((-0.3, 0.2, 1.55), (0.1, -0.6, 0.8), bend=12, spine=(-6, 0, 20), chest=(-2, 0, 22))
+    fling = pose((-0.1, -0.62, 1.32), (0.0, -1, -0.1), bend=24, back=16, spine=(18, 0, -14), chest=(6, 0, -16))
+    an.keyposes("SS_Fling", [(0, idle), (6, cock), (9, fling), (14, fling), (24, idle)], ["smooth", "in3", "linear", "smooth"])
+
 
 # ===========================================================================
 # Greatsword (two-handed; left hand 0.12 m down the grip)
@@ -271,6 +313,38 @@ def spear(an):
                     back=14)
     an.loop("SP_Jab", 8, jab)
 
+    # --- Heuksal (Silkroad) skill moves ---
+    # Ghost Spear: backswing, full 360 flat spin with the spear held out at waist height, overhead twirl, recover
+    wind = hold((-0.32, 0.12, 1.08), (-0.85, 0.5, 0.05), chest_z=-40, edge=(0, 1, 0), lf=-0.3, bend=18)
+    ext = hold((-0.12, -0.46, 1.05), (-0.25, -1, 0.0), chest_z=4, bend=24, edge=(1, 0, 0), lf=-0.3, drop=0.06)
+    over = hold((-0.1, -0.2, 1.62), (0.9, -0.2, 0.25), chest_z=0, spine_x=-4, bend=10, edge=(0, 0, 1), lf=-0.25)
+    an.keyposes("SP_Spin", [(0, merge(idle, {"root": {"r": (0, 0, 0)}})),
+                            (5, merge(wind, {"root": {"r": (0, 0, 0)}})),
+                            (9, merge(ext, {"root": {"r": (0, 0, 170)}})),
+                            (13, merge(ext, {"root": {"r": (0, 0, 360)}})),
+                            (20, merge(over, {"root": {"r": (0, 0, 360)}})),
+                            (28, merge(idle, {"root": {"r": (0, 0, 360)}}))],
+                ["smooth", "in", "out", "smooth", "smooth"])
+    # Soul Spear: crouch, leap with the spear overhead, slam (spear ends flat on the ground), hold, recover
+    crouch = hold((-0.24, 0.16, 0.86), (0.1, -0.9, -0.1), chest_z=-10, spine_x=18, bend=40, drop=0.2, back=16)
+    air = hold((-0.12, -0.02, 1.78), (0.0, 0.45, 0.9), chest_z=0, spine_x=-10, bend=30, lf=-0.3)
+    air["hips"]["l"] = (0, 0, air["hips"]["l"][2] + 0.55)
+    slam = hold((-0.08, -0.62, 0.62), (0.0, -0.9, -0.42), chest_z=8, spine_x=34, bend=44, drop=0.26, back=20,
+                lf=-0.32)
+    an.keyposes("SP_LeapSlam", [(0, idle), (4, crouch), (9, air), (13, air), (16, slam), (26, slam), (34, idle)],
+                ["smooth", "out", "linear", "in3", "linear", "smooth"])
+    # Flying Dragon: spear cocked over the shoulder, hurled javelin-style, arm extended, recover
+    cock = hold((-0.3, 0.26, 1.55), (0.04, -1, 0.18), chest_z=-30, spine_x=-6, bend=12, lf=-0.2,
+                poleR=(-0.8, 0.4, -0.2))
+    hurl = hold((-0.1, -0.62, 1.38), (0.0, -1, -0.04), chest_z=20, spine_x=18, bend=24, lf=-0.2, back=18)
+    an.keyposes("SP_Throw", [(0, idle), (6, cock), (9, hurl), (16, hurl), (30, idle)],
+                ["smooth", "in3", "linear", "smooth"])
+    # overhead vertical chop
+    raise_ = hold((-0.12, 0.02, 1.7), (0.0, 0.45, 0.9), chest_z=-6, spine_x=-8, bend=12, lf=-0.3)
+    chop = hold((-0.08, -0.6, 1.0), (0.0, -0.85, -0.5), chest_z=6, spine_x=26, bend=26, drop=0.05, lf=-0.3)
+    an.keyposes("SP_Chop", [(0, idle), (6, raise_), (10, chop), (14, chop), (20, idle)],
+                ["smooth", "in3", "linear", "smooth"])
+
 
 # ===========================================================================
 # Bow (bow in bow_socket on the LEFT hand; right hand draws)
@@ -409,6 +483,25 @@ def staff(an):
     point = cast((-0.12, -0.5, 1.32), (0.0, -1, 0.1), chest_z=8, spine_x=8, bend=12,
                  lgrip=(0.3, -0.05, 1.05), back=10)
     an.keyposes("ST_Point", [(0, idle), (5, point), (10, point), (15, idle)],
+                ["out", "linear", "smooth"])
+
+    # Silkroad-style casting: staff held out in front while the circle charges,
+    # snapped upright on release, then pointed at the target.
+    charge = cast((-0.12, -0.44, 1.24), (0.0, -0.82, 0.57), chest_z=6, spine_x=6, bend=12,
+                  lgrip=(0.1, -0.4, 1.18), back=8)
+
+    def charge_loop(ph):
+        b = math.sin(TAU * ph)
+        s = merge(charge, cape(4 + 2 * b, 4 + 2 * b))
+        s["ikR"] = ik((-0.12, -0.44, 1.24 + 0.012 * b), (0.0, -0.82, 0.57 + 0.03 * b), (1, 0, 0),
+                      pole=(-0.6, 0.4, -0.6))
+        return s
+    an.loop("ST_Charge", 30, charge_loop)
+    upright = cast((-0.1, -0.34, 1.38), (0.0, -0.06, 1), chest_z=2, spine_x=-2, bend=8,
+                   lgrip=(0.26, -0.16, 1.12), back=6)
+    an.keyposes("ST_Release", [(0, charge), (3, upright), (9, upright), (13, point), (22, point), (30, idle)],
+                ["out", "linear", "in", "linear", "smooth"])
+    an.keyposes("ST_Raise", [(0, idle), (5, upright), (40, upright), (48, idle)],
                 ["out", "linear", "smooth"])
 
 

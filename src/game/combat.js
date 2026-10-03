@@ -9,7 +9,7 @@ export class Combat {
   }
 
   // Calculates & applies damage from player to a monster
-  playerHit(m, mult, { color = 0xffffff, knock = 0, from = null, heavy = false, noFx = false, stun = 0, slow = 0, ult = false } = {}) {
+  playerHit(m, mult, { color = 0xffffff, knock = 0, from = null, heavy = false, noFx = false, stun = 0, slow = 0, ult = false, down = 0 } = {}) {
     if (m.dead) return 0;
     const st = this.game.stats;
     const me = st.mastery || {};
@@ -19,10 +19,12 @@ export class Combat {
     if (ult) mult *= 1 + (me.ultPct || 0) / 100;
     let dmg = st.atk * mult * (0.9 + Math.random() * 0.2) * defF;
     if (crit) dmg *= st.cdmg / 100;
+    if (m.exposed > 0) dmg *= 1.1;
     dmg = Math.max(1, Math.round(dmg));
     m.takeDamage(dmg, { knock, from, crit, heavy });
     if (stun && !m.tpl.boss) m.stun = Math.max(m.stun || 0, stun);
     if (slow) m.slow = Math.max(m.slow || 0, slow);
+    if (down && !m.tpl.boss) m.down = Math.max(m.down || 0, down);
     if (me.lifesteal) { const pl = this.game.player; pl.hp = Math.min(st.maxHp, pl.hp + dmg * me.lifesteal / 100); }
     const p = tmp.copy(m.position); p.y += m.tpl.height * 0.75;
     const g = this.game;

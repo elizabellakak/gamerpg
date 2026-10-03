@@ -4,7 +4,7 @@ import { WEAPON_BY_ID, ELEMENT, RARITY } from '../data/weapons.js';
 import { KITS } from '../data/skills.js';
 import { SKILL_INDEX, MASTERY_DEFS } from '../data/skilltree.js';
 import '../data/skills_masteries.js';
-import { skillRuntime, weaponFitsMastery } from '../systems/skills.js';
+import { skillRuntime, skillFitsWeapon } from '../systems/skills.js';
 import { Trail } from '../fx/trail.js';
 import { AuraController } from '../fx/aura.js';
 import { projectile, aimDir, explosion } from './skills/common.js';
@@ -13,8 +13,12 @@ import greatswordSkills from './skills/greatsword.js';
 import spearSkills from './skills/spear.js';
 import bowSkills from './skills/bow.js';
 import staffSkills from './skills/staff.js';
+import wizardSkills from './skills/wizard.js';
+import heuksalSkills from './skills/heuksal.js';
+import warriorSkills from './skills/warrior.js';
+import bicheonSkills from './skills/bicheon.js';
 
-const HANDLERS = { ...swordSkills, ...greatswordSkills, ...spearSkills, ...bowSkills, ...staffSkills };
+export const HANDLERS = { ...swordSkills, ...greatswordSkills, ...spearSkills, ...bowSkills, ...staffSkills, ...wizardSkills, ...heuksalSkills, ...warriorSkills, ...bicheonSkills };
 
 const tmpV = new THREE.Vector3();
 const tmpV2 = new THREE.Vector3();
@@ -64,7 +68,54 @@ export class Player {
     this.autoMode = false;
     this.autoTarget = null;
     this.regenT = 0;
+    this.buffs = {};
+    this.invis = 0; this.invisLevel = 0;
+    this.inputYaw = 0; this.inputMoving = false;
     this.play('Idle');
+  }
+
+  // ---------- buffs (timed, not saved) ----------
+  addBuff(group, b) {
+    const old = this.buffs[group];
+    if (old && old.fx) old.fx.end(0);
+    this.buffs[group] = { ...b, t: b.dur };
+    this.game.recalcStats(true);
+    this.game.ui.renderBuffs && this.game.ui.renderBuffs();
+  }
+  removeBuff(group) {
+    const b = this.buffs[group];
+    if (!b) return;
+    if (b.fx) b.fx.end(0);
+    delete this.buffs[group];
+    this.game.recalcStats(true);
+    this.game.ui.renderBuffs && this.game.ui.renderBuffs();
+  }
+  buffActive(s) { const h = HANDLERS[s.fx]; const k = (h && h.buffGroup) || s.id; return !!(this.buffs[k] && this.buffs[k].t > 0); }
+  buffMods() {
+    const out = {};
+    for (const b of Object.values(this.buffs)) for (const [k, v] of Object.entries(b.mods || {})) out[k] = (out[k] || 0) + v;
+    return out;
+  }
+
+  // ---------- invisibility (Invisible / Crystal Invisible) ----------
+  setInvisible(t, level) { this.invis = t; this.invisLevel = level; this.setGhostAlpha(0.3); this.game.ui.renderBuffs && this.game.ui.renderBuffs(); }
+  breakInvis() { if (this.invis <= 0 && !this._ghost) return; this.invis = 0; this.setGhostAlpha(1); this.game.ui.renderBuffs && this.game.ui.renderBuffs(); }
+  hiddenFrom(dist) { return this.invis > 0 && (this.invisLevel >= 2 || dist > 2.5); }
+  setGhostAlpha(a) {
+    if (a >= 0.999) {
+      if (this._ghost) { for (const [o, orig, cl] of this._ghost) { o.material = orig; cl.dispose(); } this._ghost = null; }
+      return;
+    }
+    if (!this._ghost) {
+      this._ghost = [];
+      this.obj.traverse((o) => {
+        if (!o.isMesh || o.userData.isShell || !o.material || Array.isArray(o.material)) return;
+        const cl = o.material.clone(); cl.transparent = true; cl.depthWrite = false;
+        if (cl.color) cl.color.lerp(new THREE.Color(0x6a9cff), 0.35);
+        this._ghost.push([o, o.material, cl]); o.material = cl;
+      });
+    }
+    for (const [, , cl] of this._ghost) cl.opacity = a;
   }
 
   get mastery() { return this.game.stats.mastery || { skillPct: 0, awaken: new Set() }; }
@@ -103,6 +154,8 @@ export class Player {
 
   // ---------- equipment ----------
   equip(inst) {
+    this.setGhostAlpha(1);
+    if (this.invis > 0) this.invis = 0;
     if (this.weapon) { this.weapon.parent && this.weapon.parent.remove(this.weapon); }
     if (this.shield) { this.shield.parent && this.shield.parent.remove(this.shield); this.shield = null; }
     const def = WEAPON_BY_ID[inst.id];
@@ -162,6 +215,10 @@ export class Player {
       }
     }
 
+    // buff timers
+    for (const [k, b] of Object.entries(this.buffs)) { b.t -= dt; if (b.t <= 0) this.removeBuff(k); }
+    if (this.invis > 0) { this.invis -= dt; if (this.invis <= 0) this.breakInvis(); }
+
     if (this.dead) { this.mixer.update(dt); return; }
 
     // movement intent
@@ -190,6 +247,8 @@ export class Player {
       if (r) { dirX = r.dirX; dirZ = r.dirZ; wantAttack = wantAttack || r.attack; wantSkill = wantSkill || r.skill; }
     }
     const moving = Math.hypot(dirX, dirZ) > 0.05;
+    this.inputMoving = moving;
+    if (moving) this.inputYaw = Math.atan2(dirX, dirZ);
 
     // state machine
     if (wantDash && this.dashCd <= 0 && this.state !== 'dash' && !(this.state === 'skill' && this.skillLock)) {
@@ -201,7 +260,7 @@ export class Player {
       else if (this.state === 'attack' && this.stateT > this.atkDur * 0.35) this.queued = true;
     }
 
-    const spd = this.speed * (1 + (this.mastery.movePct || 0) / 100) * (this.state === 'skill' && this.skillMove ? this.skillMove : 1);
+    const spd = this.speed * (1 + (this.mastery.movePct || 0) / 100) * (this.state === 'skill' && this.skillMove ? this.skillMove : 1) * (this.invis > 0 ? 0.6 : 1);
     if (this.state === 'move' || (this.state === 'skill' && this.skillMove)) {
       if (moving) {
         this.vel.set(dirX, 0, dirZ).normalize().multiplyScalar(spd);
@@ -266,6 +325,7 @@ export class Player {
   // ---------- basic attacks ----------
   startAttack(i) {
     const g = this.game;
+    this.breakInvis();
     const atks = this.kit.attacks;
     this.state = 'attack'; this.stateT = 0;
     this.combo = i % atks.length; this.queued = false;
@@ -439,6 +499,8 @@ export class Player {
       this.fx.flare(this.position.clone().setY(this.position.y + 1.2).add(this.forward().multiplyScalar(0.6)), new THREE.Color(this.elColor2), 2, 0.15);
       g.audio.play('anvil', { pitch: 1.4 });
     }
+    const absorb = Math.min(80, (st.mastery && st.mastery.absorb) || 0);
+    if (absorb > 0) dmg = Math.max(1, Math.round(dmg * (1 - absorb / 100)));
     if (this.barrier > 0) {
       const ab = Math.min(this.barrier, dmg);
       this.barrier -= ab; dmg -= ab;
@@ -499,10 +561,12 @@ export class Player {
       const list = hb.pages[hb.page].filter((e) => e && e.type === 'skill' && (g.state.slv[e.id] || 0) > 0).map((e) => skillRuntime(g.state, e.id)).reverse();
       for (const s of list) {
         if ((this.cooldowns[s.id] || 0) > 0 || this.mp < this.mpCost(s)) continue;
-        if (!weaponFitsMastery(s.mastery, this.cls) || s.kind === 'passive') continue;
+        if (!skillFitsWeapon(s, this.cls) || s.kind === 'passive') continue;
         if (s.ult && !(t.tpl.boss || t.maxHp > st.atk * 25 || near >= 4)) continue;
         if (s.kind === 'aoe_self' && near < 2) continue;
-        if (s.kind === 'buff' && this.buffs && this.buffs[s.id] > 0) continue;
+        if (s.kind === 'buff' && this.buffActive(s)) continue;
+        if (s.kind === 'util' || s.kind === 'trap') continue;
+        const hc = HANDLERS[s.fx]; if (hc && hc.canCast && !hc.canCast(this)) continue;
         res.skill = s; break;
       }
     }
@@ -515,20 +579,24 @@ export class Player {
   tryCast(s) {
     const g = this.game;
     if (s.kind === 'passive') { g.ui.toast('สกิลติดตัว (Passive) ทำงานอัตโนมัติ', ''); return; }
-    if (!weaponFitsMastery(s.mastery, this.cls)) { g.ui.toast(`ต้องใช้อาวุธสาย ${MASTERY_DEFS[s.mastery].name}`, 'warn'); return; }
+    if (!skillFitsWeapon(s, this.cls)) { g.ui.toast('You wear equipment which prohibits you from using the selected skill.', 'warn'); return; }
     if ((this.cooldowns[s.id] || 0) > 0) return;
+    const hc = HANDLERS[s.fx];
+    if (hc && hc.canCast && !hc.canCast(this)) { g.ui.toast('ใช้ได้เฉพาะกับศัตรูที่ล้มลง (Blade Force ทำให้ล้ม)', 'warn'); return; }
     const cost = this.mpCost(s);
     if (this.mp < cost) { g.ui.toast('MP ไม่พอ!', 'warn'); return; }
     this.mp -= cost;
     this.cooldowns[s.id] = s.cd * (1 - (this.mastery.cdr || 0) / 100);
+    if (s.cdGroup) for (const o of Object.values(SKILL_INDEX)) if (o.cdGroup === s.cdGroup) this.cooldowns[o.id] = this.cooldowns[s.id];
     this.state = 'skill'; this.stateT = 0;
     this.skill = s; this.skillData = {};
     this.skillMove = 0; this.skillLock = false;
     this.trail.active = !this.kit.ranged;
-    this.faceNearest(14);
-    this.yaw = this.targetYaw;
-    this.vel.set(0, 0, 0);
     const h = HANDLERS[s.fx];
+    if (!/invisible/.test(s.fx)) this.breakInvis();
+    if (h && h.noFace) { if (this.inputMoving) this.targetYaw = this.inputYaw; this.yaw = this.targetYaw; }
+    else { this.faceNearest(14); this.yaw = this.targetYaw; }
+    this.vel.set(0, 0, 0);
     if (h && h.start) h.start(this, s, this.skillData);
     g.ui.skillFlash(s);
     g.ui.hotbarFlash && g.ui.hotbarFlash(s.id);

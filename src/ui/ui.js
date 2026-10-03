@@ -1,5 +1,7 @@
 import { WEAPON_BY_ID, RARITY, ELEMENT, ITEMS, weaponStats } from '../data/weapons.js';
-import { SkillWindow, hotbarHTML, bindHotbar, renderHotbar, updateHotbar } from './skillwindow.js';
+import { SkillWindow, hotbarHTML, bindHotbar, renderHotbar, updateHotbar, iconFor } from './skillwindow.js';
+import { skillIcon } from './skillicons.js';
+import { SKILL_INDEX } from '../data/skilltree.js';
 import { HOTBAR_PAGES } from '../systems/skills.js';
 import { CLASSES } from '../data/weapons.js';
 import { ZONES } from '../data/monsters.js';
@@ -50,6 +52,7 @@ export class UI {
           <div class="name">ผู้กล้าแห่งออร่า <span class="cp" id="h-cp">CP 0</span></div>
           <div class="bar hp"><div class="fill" id="h-hp"></div><div class="lag" id="h-hp-lag"></div><span id="h-hp-t"></span></div>
           <div class="bar mp"><div class="fill" id="h-mp"></div><span id="h-mp-t"></span></div>
+          <div id="buffs"></div>
         </div>
       </div>
       <div id="hud-tr">
@@ -207,12 +210,18 @@ export class UI {
     const need = xpToNext(this.s.level);
     $c('#xp-fill').style.width = (this.s.xp / need) * 100 + '%';
     $c('#xp-t').textContent = `EXP ${(this.s.xp / need * 100).toFixed(1)}%`;
+    this._hbT = (this._hbT || 0) - dt;
+    if (this._hbT <= 0) { this._hbT = 0.3; $c('#hb-sp').textContent = Math.floor(this.s.sp).toString(); $c('#hb-lv').textContent = this.s.level; $c('#hb-exp').textContent = (this.s.xp / need * 100).toFixed(2); }
     // skills cooldowns
     updateHotbar(this);
     if (this.skillWin && this.skillWin.el) {
       this._swT = (this._swT || 0) - dt;
       if (this._swT <= 0) { this._swT = 1; const spEl = this.skillWin.el.querySelector('.sw-foot b'); if (spEl) spEl.textContent = fmt(this.s.sp); }
+      this.skillWin.tick();
     }
+    // buff timers (SRO style: icon row by the bars, tooltip with remaining time)
+    this._bfT = (this._bfT || 0) - dt;
+    if (this._bfT <= 0) { this._bfT = 0.25; this.updateBuffs(); }
     const db = $c('#btn-dash .cd');
     db.style.background = pl.dashCd > 0 ? `conic-gradient(rgba(0,0,0,.7) ${(pl.dashCd / 0.9) * 360}deg, transparent 0)` : 'transparent';
     // boss bar
@@ -226,6 +235,58 @@ export class UI {
     this.minimapT = (this.minimapT || 0) - dt;
     if (this.minimapT <= 0 && g.mode === 'world') { this.minimapT = 0.1; this.minimap.draw(); const z = g.world.zoneAt(pl.position.x, pl.position.z); $c('#mm-zone').textContent = z ? z.name : 'ทุ่งกว้าง'; }
     if (this.panel === 'enhance' && !this.busy) { /* static */ }
+  }
+
+  renderBuffs() {
+    const el = $c('#buffs');
+    if (!el) return;
+    const pl = this.game.player;
+    const list = Object.entries(pl.buffs).map(([k, b]) => ({ k, b }));
+    if (pl.invis > 0) list.push({ k: 'invis', b: { id: null, name: pl.invisLevel >= 2 ? 'Crystal Invisible' : 'Invisible', t: pl.invis, dur: pl.invisLevel >= 2 ? 60 : 40, mods: {}, icon: 'stealth', color: '#3a78c0' } });
+    el.innerHTML = list.map(({ k, b }) => {
+      const url = b.id && SKILL_INDEX[b.id] ? iconFor(b.id) : skillIcon('buff_' + k, b.icon || 'buff', b.color || '#806020');
+      return `<div class="buff" data-buff="${k}" style="background-image:url(${url})"><i></i></div>`;
+    }).join('');
+    el.querySelectorAll('.buff').forEach((d) => {
+      d.onpointerenter = () => this.buffTip(d.dataset.buff, d);
+      d.onpointerleave = () => { const t = document.getElementById('buff-tip'); if (t) t.remove(); };
+    });
+    this.updateBuffs();
+  }
+
+  updateBuffs() {
+    const pl = this.game.player, el = $c('#buffs');
+    if (!el) return;
+    el.querySelectorAll('.buff').forEach((d) => {
+      const k = d.dataset.buff;
+      const b = k === 'invis' ? { t: pl.invis, dur: pl.invisLevel >= 2 ? 60 : 40 } : pl.buffs[k];
+      if (!b) return;
+      d.querySelector('i').style.height = (100 - Math.max(0, b.t / b.dur) * 100) + '%';
+      d.classList.toggle('blink', b.t < 10);
+    });
+    const tip = document.getElementById('buff-tip');
+    if (tip) this.buffTip(tip.dataset.k, null);
+  }
+
+  buffTip(k, anchor) {
+    const pl = this.game.player;
+    const b = k === 'invis' ? { name: pl.invisLevel >= 2 ? 'Crystal Invisible' : 'Invisible', t: pl.invis, dur: pl.invisLevel >= 2 ? 60 : 40, mods: {}, id: null } : pl.buffs[k];
+    let tip = document.getElementById('buff-tip');
+    if (!b) { if (tip) tip.remove(); return; }
+    if (!tip) { tip = document.createElement('div'); tip.id = 'buff-tip'; this.root.appendChild(tip); }
+    tip.dataset.k = k;
+    const lv = b.id ? this.s.slv[b.id] || 1 : '';
+    const m = b.mods || {};
+    const rows = [];
+    rows.push(`Continuous hours ${b.dur} Second`);
+    if (m.skillPct) rows.push(`Magical damage ${m.skillPct}% Increase`);
+    if (m.atkPct) rows.push(`Mag. atk. pwr. ${m.atkPct}% Increase`);
+    if (m.hpPct) rows.push(`Maximum HP ${-m.hpPct}% Reduce`);
+    if (m.absorb) rows.push(`Physical damage ${m.absorb}% Absorption`);
+    const sec = Math.max(0, Math.ceil(b.t)), mm = Math.floor(sec / 60), ss = sec % 60;
+    const desc = b.id && SKILL_INDEX[b.id] ? SKILL_INDEX[b.id].desc : 'ล่องหน ศัตรูมองไม่เห็น เคลื่อนที่ช้าลง โจมตีหรือใช้สกิลแล้วจะปรากฏตัว';
+    tip.innerHTML = `<div class="bt-name">${b.name}${lv ? ` <span>Lv ${lv}</span>` : ''}</div><div class="bt-desc">${desc}</div><div class="bt-rows">${rows.map((r) => `<div>${r}</div>`).join('')}</div><div class="bt-time">Remaining time ${mm ? mm + 'Minute ' : ''}${ss}Second</div>`;
+    if (anchor) { const r = anchor.getBoundingClientRect(); tip.style.left = r.left + 'px'; tip.style.top = r.bottom + 6 + 'px'; }
   }
 
   // in-game modal (the artifact viewer blocks alert/confirm)
@@ -648,10 +709,10 @@ export class UI {
     $('#s-boss', body).addEventListener('change', (e) => { this.game.allowAutoBoss = e.target.checked; });
     $('#s-test', body).addEventListener('click', () => {
       const s = this.s;
-      s.level = Math.max(s.level, 60); s.sp += 20000000;
+      s.level = Math.max(s.level, 125); s.sp += 20000000;
       s.gems += 16000; s.gold += 500000; s.items.stone = (s.items.stone || 0) + 300; s.items.stone_blessed = (s.items.stone_blessed || 0) + 20; s.items.scroll_protect = (s.items.scroll_protect || 0) + 20; s.items.ticket = (s.items.ticket || 0) + 10;
       audio.play('bigSuccess');
-      this.toast('ได้รับ 💎16,000 · 🪙500,000 · หิน 300 · หินศักดิ์สิทธิ์ 20 · คัมภีร์ 20 · ตั๋ว 10 · เลเวล 60 · Skill point 20,000,000', 'legend');
+      this.toast('ได้รับ 💎16,000 · 🪙500,000 · หิน 300 · หินศักดิ์สิทธิ์ 20 · คัมภีร์ 20 · ตั๋ว 10 · เลเวล 125 · Skill point 20,000,000', 'legend');
       this.game.recalcStats(); this.game.player.equip(equippedWeapon(this.s)); this.refreshSkills();
       this.refreshAll(); this.game.save();
     });

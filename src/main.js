@@ -3,6 +3,8 @@ import { Input } from './core/input.js';
 import { assets, PROMO_URL } from './core/assets.js';
 import { audio } from './core/audio.js';
 import { Game } from './game/game.js';
+import { SKILL_INDEX } from './data/skilltree.js';
+import { skillRuntime } from './systems/skills.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -21,6 +23,16 @@ async function boot() {
   window.game = game; // debug handle
   // debug: advance simulation by N seconds at 60 Hz without rendering (used by automated screenshots)
   window.__advance = (sec) => { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) game.update(1 / 60, 1 / 60); };
+  // debug: cast a skill by its effect id (automated skill screenshots)
+  window.__cast = (fx) => {
+    const sk = Object.values(SKILL_INDEX).find((s) => s.fx === fx);
+    if (!sk) return null;
+    const st = game.state, pl = game.player;
+    st.slv[sk.id] = Math.max(1, st.slv[sk.id] || 0);
+    pl.cooldowns[sk.id] = 0; pl.mp = game.stats.maxMp; pl.toMove();
+    pl.tryCast(skillRuntime(st, sk.id));
+    return sk.id;
+  };
   // warm up shaders
   engine.renderer.compile(game.world.scene, engine.camera);
   engine.start((dt, raw) => game.update(dt, raw));
