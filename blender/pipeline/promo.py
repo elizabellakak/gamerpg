@@ -156,7 +156,7 @@ def build(path=None, samples=96, w=1600, h=900):
     beam = beamB.to_object("beam")
     beam.data.materials.clear()
     beam.data.materials.append(beam_material())
-    glow("spark", "#ffe7a0", 12.0)
+    glow("spark", "#ffc850", 12.0)
     S = Builder()
     for i in range(45):
         a = rnd.uniform(0, math.pi * 2)

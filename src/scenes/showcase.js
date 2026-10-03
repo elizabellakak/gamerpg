@@ -33,14 +33,14 @@ export class Showcase {
     this.camera.position.copy(this.camPos);
 
     const s = this.scene;
-    s.add(new THREE.HemisphereLight(0x8090ff, 0x201010, 0.6));
+    s.add(new THREE.HemisphereLight(0x8090ff, 0x100808, 0.35));
     const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(3, 6, 5); s.add(key);
     const rim = new THREE.DirectionalLight(0x88aaff, 2.5); rim.position.set(-4, 3, -5); s.add(rim);
     this.rimLight = rim;
-    this.pointLight = new THREE.PointLight(0xffffff, 10, 12, 2); this.pointLight.position.set(0, 1.5, 1.5); s.add(this.pointLight);
+    this.pointLight = new THREE.PointLight(0xffffff, 6, 6, 2); this.pointLight.position.set(0, 2.6, 2.2); s.add(this.pointLight);
 
     // floor: dark glossy disc + magic circle
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 64).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x0b0c18, roughness: 0.25, metalness: 0.8 }));
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 64).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x05060c, roughness: 0.9, metalness: 0, envMapIntensity: 0 }));
     s.add(floor);
     // stars
     const N = 1500, pos = new Float32Array(N * 3);
@@ -58,7 +58,7 @@ export class Showcase {
     this.pivot = new THREE.Group();
     this.pivot.position.set(0, 1.0, 0);
     s.add(this.pivot);
-    this.spin = 0.6;
+    this.spin = 0.45;
     this.weapon = null;
 
     // anvil-ish pedestal for enhance
@@ -88,18 +88,19 @@ export class Showcase {
     const box = new THREE.Box3().setFromObject(scene);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-    const k = 2.7 / Math.max(size.y, 0.3);
+    const k = 3.3 / Math.max(size.y, 0.3);
     const holder = new THREE.Group();
     scene.position.sub(center);
     holder.add(scene);
     holder.scale.setScalar(k);
+    holder.rotation.z = 0.3;
     this.weapon = holder;
     this.pivot.add(holder);
     this.pivot.position.y = 1.0 + 1.45;
     this.inst = inst; this.def = def;
     this.weaponScale = k;
     this.tip = scene.getObjectByName('tip'); this.base = scene.getObjectByName('base');
-    this.aura.apply(scene, inst.plus, null, { scale: 1.6 });
+    this.aura.apply(scene, inst.plus, null, { scale: 1.0 });
     const el = ELEMENT[def.element];
     this.rimLight.color.set(el.color);
     this.pointLight.color.set(el.color2);
@@ -109,7 +110,7 @@ export class Showcase {
   refreshAura(plus) {
     if (!this.weapon) return;
     this.inst.plus = plus;
-    this.aura.apply(this.weapon.children[0], plus, null, { scale: 1.6 });
+    this.aura.apply(this.weapon.children[0], plus, null, { scale: 1.0 });
   }
 
   enter(mode) {
@@ -157,7 +158,7 @@ export class Showcase {
         }
       });
       setTimeout(() => {
-        this.spin = 0.6;
+        this.spin = 0.45;
         const r = result.result;
         if (r === 'success') {
           const t = auraTier(result.to);

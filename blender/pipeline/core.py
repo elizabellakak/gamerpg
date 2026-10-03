@@ -80,6 +80,7 @@ def basis(x=None, y=None, z=None, loc=(0, 0, 0)):
 # materials
 # ---------------------------------------------------------------------------
 _MAT_CACHE = {}
+EMISSION_CAP = 2.5
 
 
 def srgb(c):
@@ -103,6 +104,12 @@ def material(name, color="#cccccc", metal=0.0, rough=0.5, emit=None, strength=0.
         m.use_nodes = True
     b = m.node_tree.nodes.get("Principled BSDF")
     col = srgb(color)
+    if emit is not None and strength > 0:
+        # the game's bloom blows out strong emission to white: cap it and keep glows saturated
+        strength = min(strength, EMISSION_CAP)
+        if strength >= 1.0:
+            ec = srgb(emit)
+            col = tuple(c * 0.45 for c in ec)
     b.inputs["Base Color"].default_value = (*col, 1.0)
     b.inputs["Metallic"].default_value = metal
     b.inputs["Roughness"].default_value = rough

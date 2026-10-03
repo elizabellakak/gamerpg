@@ -2,8 +2,9 @@ import * as THREE from 'three';
 
 // Ribbon trail between two moving points (weapon base & tip)
 export class Trail {
-  constructor(scene, { length = 22, color = 0xffffff, color2 = 0xffffff } = {}) {
-    this.length = length;
+  constructor(scene, { length = 48, samples = 14, color = 0xffffff, color2 = 0xffffff } = {}) {
+    this.length = length;      // rendered (resampled) points
+    this.samples = samples;    // raw history kept
     this.base = []; this.tip = [];
     const n = length;
     this.positions = new Float32Array(n * 2 * 3);
@@ -46,14 +47,23 @@ export class Trail {
   update(dt, basePos, tipPos) {
     this.opacity += ((this.active ? 1 : 0) - this.opacity) * Math.min(1, dt * (this.active ? 30 : 8));
     this.mat.uniforms.uOpacity.value = this.opacity;
-    this.base.push(basePos.clone()); this.tip.push(tipPos.clone());
-    // add interpolated sample for smoother arcs
-    while (this.base.length > this.length) { this.base.shift(); this.tip.shift(); }
+    this.t = (this.t || 0) + dt;
+    this.times = this.times || [];
+    this.base.push(basePos.clone()); this.tip.push(tipPos.clone()); this.times.push(this.t);
+    while (this.base.length > this.samples || (this.base.length > 3 && this.t - this.times[0] > 0.24)) { this.base.shift(); this.tip.shift(); this.times.shift(); }
+    // resample the raw history with a centripetal Catmull-Rom so arcs stay smooth at any frame rate
     const n = this.length, cnt = this.base.length;
+    if (cnt < 2) return;
+    const cb = this._cb || (this._cb = new THREE.CatmullRomCurve3([], false, 'centripetal'));
+    const ct = this._ct || (this._ct = new THREE.CatmullRomCurve3([], false, 'centripetal'));
+    cb.points = this.base; ct.points = this.tip;
+    const pb = this._pb || (this._pb = new THREE.Vector3()), pt = this._pt || (this._pt = new THREE.Vector3());
     for (let i = 0; i < n; i++) {
-      const j = Math.max(0, cnt - n + i);
-      const b = this.base[Math.min(j, cnt - 1)], t = this.tip[Math.min(j, cnt - 1)];
-      this.positions.set([b.x, b.y, b.z, t.x, t.y, t.z], i * 6);
+      const u = i / (n - 1);
+      cb.getPoint(u, pb); ct.getPoint(u, pt);
+      const o = i * 6;
+      this.positions[o] = pb.x; this.positions[o + 1] = pb.y; this.positions[o + 2] = pb.z;
+      this.positions[o + 3] = pt.x; this.positions[o + 4] = pt.y; this.positions[o + 5] = pt.z;
     }
     this.geo.attributes.position.needsUpdate = true;
   }

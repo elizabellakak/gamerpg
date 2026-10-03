@@ -43,6 +43,8 @@ class Assets {
             for (const m of mats) {
               if (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.01) {
                 m.userData.glow = true;
+                // keep glow colourful instead of blowing out to white under bloom
+                m.emissiveIntensity = Math.min(m.emissiveIntensity, 2.6);
                 m.toneMapped = true;
               }
               if (m.transparent) o.castShadow = false;

@@ -186,11 +186,22 @@ export function buildTerrain(quality = 'high') {
       float rr = length(vWPos.xz);
       float plaza = 1.0 - smoothstep(13.0, 14.5, rr);
       if (plaza > 0.0) {
-        vec2 v = voronoi(vWPos.xz * 1.5);
-        float mortar = smoothstep(0.03, 0.1, v.x);
-        vec3 stone = mix(vec3(0.55, 0.53, 0.5), vec3(0.74, 0.7, 0.63), v.y) * (0.85 + n2 * 0.3);
-        stone *= 0.78 + 0.3 * smoothstep(0.0, 0.45, v.x);
-        stone = mix(vec3(0.3, 0.28, 0.25), stone, mortar);
+        // offset temple slabs laid in concentric rings
+        float ang = atan(vWPos.z, vWPos.x);
+        float row = floor(rr / 1.15);
+        float circ = max(6.2831 * (row + 0.5) * 1.15, 1.0);
+        float cells = floor(circ / 1.5);
+        float u = (ang / 6.2831 + 0.5) * cells + mod(row, 2.0) * 0.5;
+        vec2 cell = vec2(floor(u), row);
+        vec2 f = vec2(fract(u) * (circ / cells), fract(rr / 1.15) * 1.15);
+        vec2 sz = vec2(circ / cells, 1.15);
+        vec2 e = min(f, sz - f);
+        float edge = min(e.x, e.y);
+        float mortar = smoothstep(0.03, 0.08, edge);
+        float h = hash2(cell).x;
+        vec3 stone = mix(vec3(0.5, 0.48, 0.45), vec3(0.72, 0.68, 0.6), h) * (0.82 + n2 * 0.35);
+        stone *= 0.8 + 0.25 * smoothstep(0.0, 0.3, edge);
+        stone = mix(vec3(0.22, 0.2, 0.18), stone, mortar);
         float ring = smoothstep(0.12, 0.0, abs(rr - 13.0)) + smoothstep(0.1, 0.0, abs(rr - 5.0));
         stone = mix(stone, vec3(0.85, 0.7, 0.42), ring * 0.8);
         diffuseColor.rgb = mix(diffuseColor.rgb, stone, plaza);

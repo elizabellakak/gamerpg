@@ -180,6 +180,18 @@ export class World {
     // forge (enhance) & gacha shrine
     this.forge = this.addModel('forge', 15, -6, -Math.PI / 2 + 0.4); C.add(15, -6, 2.2);
     this.shrine = this.addModel('gacha_shrine', -15, -6, Math.PI / 2 - 0.4); C.add(-15, -6, 2.4);
+    const crystal = this.shrine.getObjectByName('gacha_crystal');
+    if (crystal) {
+      const y0 = crystal.position.y;
+      let t = 0;
+      this.updaters.push((dt) => { t += dt; crystal.rotation.y += dt * 0.8; crystal.position.y = y0 + Math.sin(t * 1.5) * 0.12; });
+    }
+    // warm light pools for the NPC stations
+    for (const [x, z, c] of [[-15, -6, 0xff7ad8], [15, -6, 0xff8a30]]) {
+      const l = new THREE.PointLight(c, 18, 11, 2);
+      l.position.set(x, heightAt(x, z) + 3.2, z);
+      this.scene.add(l);
+    }
     // warp portal
     this.portal = this.addModel('portal', 0, 16, Math.PI); C.add(-2.3, 16, 0.6); C.add(2.3, 16, 0.6);
     const pm = new THREE.Mesh(new THREE.CircleGeometry(1.9, 48), portalMaterial());

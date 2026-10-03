@@ -84,7 +84,8 @@ export class Game {
     this.mode = mode;
     this.showcase.enter(mode);
     this.engine.setScene(this.showcase.scene, this.showcase.camera);
-    this.engine.bloom.strength = 0.95;
+    this.engine.bloom.strength = 0.5;
+    this.engine.bloom.threshold = 0.92;
     this.input.enabled = false;
   }
   exitShowcase() {
@@ -93,7 +94,8 @@ export class Game {
     this.showcase.clearOrbs();
     this.engine.setScene(this.world.scene, this.mainCam);
     this.dmgText.camera = this.mainCam;
-    this.engine.bloom.strength = 0.75;
+    this.engine.bloom.strength = 0.55;
+    this.engine.bloom.threshold = 0.88;
     this.input.enabled = true;
     // re-apply aura of equipped weapon (plus may have changed)
     const w = equippedWeapon(this.state);

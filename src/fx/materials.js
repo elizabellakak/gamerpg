@@ -132,7 +132,7 @@ export function tornadoMaterial(color, color2 = 0xffffff) {
         float v = smoothstep(0.0, 0.15, vUv.y) * smoothstep(1.0, 0.6, vUv.y);
         float a = v * (n * 0.6 + streak * 1.4);
         vec3 col = mix(uColor, uColor2, streak);
-        gl_FragColor = vec4(col * a * uOpacity * 1.5, 1.0);
+        gl_FragColor = vec4(col * a * uOpacity * 0.75, 1.0);
       }`,
   });
 }
@@ -173,7 +173,7 @@ export function auraShellMaterial(color, color2, { thickness = 0.02, intensity =
         float n = texture2D(uNoise, vec2(vWorld.x * 2.0 + vWorld.z, vWorld.y * 2.5 - uTime * 2.0)).r;
         vec3 col = mix(uColor, uColor2, n);
         col = mix(col, hue(fract(vWorld.y * 0.35 - uTime * 0.25)) * 1.2 + 0.2, uRainbow);
-        float a = (fr * 1.4 + 0.25) * (0.5 + n * vFl * 1.8) * uIntensity;
+        float a = (pow(fr, 1.4) * 1.3 + 0.05) * (0.35 + n * vFl * 1.6) * uIntensity;
         gl_FragColor = vec4(col * a, 1.0);
       }`,
   });

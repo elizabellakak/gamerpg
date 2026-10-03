@@ -413,7 +413,7 @@ export class Player {
     this.skillMove = 0.75;
     this.play('Skill', { fade: 0.05, dur: 0.6 });
     const g = this.game;
-    g.fx.tornado(this.obj, { color: this.elColor, color2: this.elColor2, radius: 3.4, height: 3.4, duration: 2.6 });
+    g.fx.tornado(this.obj, { color: this.elColor, color2: this.elColor2, radius: 3.0, height: 3.0, duration: 2.6 });
     g.fx.magicCircle(this.position, { color: this.elColor, radius: 4, duration: 2.6, follow: this.obj, style: 1, seed: 5, rot: 2.5, opacity: 0.8 });
     g.audio.play('whirl');
   }
@@ -425,8 +425,8 @@ export class Player {
     if (this.current !== this.actions.Skill) this.play('Skill', { dur: 0.6 });
     this.yaw += dt * 0; // anim handles spin
     if (d.ring <= 0) {
-      d.ring = 0.3;
-      g.fx.slash(this.position, Math.random() * Math.PI * 2, { color: this.elColor, color2: this.elColor2, radius: 3.4, width: 1.2, angle: Math.PI * 2, tilt: (Math.random() - 0.5) * 0.4, duration: 0.25, y: 0.6 + Math.random() * 1.6 });
+      d.ring = 0.32;
+      g.fx.slash(this.position, Math.random() * Math.PI * 2, { color: this.elColor, color2: this.elColor2, radius: 3.2, width: 0.8, angle: Math.PI * 1.6, tilt: (Math.random() - 0.5) * 0.4, duration: 0.25, y: 0.6 + Math.random() * 1.4, sparks: false });
       g.audio.play('swing', { pitch: 1.2 });
     }
     if (d.tick <= 0) {

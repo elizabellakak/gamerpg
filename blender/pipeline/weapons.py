@@ -18,15 +18,15 @@ def _mats():
     glow("glow_fire", "#ff5a14", 6.0, color="#ffb060")
     glow("glow_fire_soft", "#ff4a10", 2.5, color="#ff7a30")
     glow("glow_lava", "#ff6a10", 7.0, color="#ffa040")
-    glow("glow_ice", "#5ef2ff", 5.0, color="#c8fbff")
+    glow("glow_ice", "#32dcff", 5.0, color="#c8fbff")
     define("ice_crystal", color="#a8ecff", rough=0.06, emit="#40d8ff", strength=2.2)
     glow("glow_electric", "#4aa8ff", 6.0, color="#c8e6ff")
     glow("glow_violet", "#9a5cff", 6.0, color="#d8c4ff")
     glow("glow_holy", "#ffd25a", 5.0, color="#fff1c0")
-    glow("glow_holy_white", "#fff4d0", 6.0, color="#ffffff")
+    glow("glow_holy_white", "#ffe07a", 6.0, color="#ffffff")
     glow("glow_abyss", "#e0185a", 5.5, color="#ff5a8a")
     glow("glow_abyss_violet", "#8a20ff", 5.0, color="#c08aff")
-    glow("glow_moon", "#bff6ff", 5.0, color="#f0fdff")
+    glow("glow_moon", "#6fe4ff", 5.0, color="#f0fdff")
     define("ember_steel", color="#5a2a24", metal=1.0, rough=0.32)
     define("frost_metal", color="#bfdcef", metal=1.0, rough=0.25)
     define("storm_metal", color="#3a3f5c", metal=1.0, rough=0.3)
@@ -34,6 +34,7 @@ def _mats():
     define("enamel_blue", color="#1b3d8f", metal=0.5, rough=0.3)
     define("bone", color="#e6dcc3", rough=0.6)
     define("fang", color="#efe6cf", rough=0.45)
+    define("holy_feather", color="#f6e2a0", metal=0.5, rough=0.3, emit="#ffd27a", strength=0.8)
     define("phoenix_core", color="#f2b54a", metal=1.0, rough=0.25)
     for i, (c, s) in enumerate((("#ffe27a", 4.0), ("#ffc040", 4.5), ("#ff8a26", 5.0),
                                 ("#ff5020", 5.5), ("#e8203a", 6.0))):
@@ -424,13 +425,13 @@ def celestial_excalibur(B):
     B.sphere(0.026, loc=(0, 0, -0.16), m="gold", segs=12, rings=8)
     B.gem(0.016, loc=(0, -0.022, -0.16), rot=(90, 0, 0), m="glow_holy_white", segs=8)
     B.gem(0.016, loc=(0, 0.022, -0.16), rot=(-90, 0, 0), m="glow_holy_white", segs=8)
-    feather(B, (0.02, 0, -0.16), -150 + 180 - 30, 0.06, 0.012, "gold_pale")
+    feather(B, (0.02, 0, -0.16), -150 + 180 - 30, 0.06, 0.012, "holy_feather")
     B.box((0.075, 0.05, 0.06), loc=(0, 0, 0.095), m="gold", bevel=0.012, taper=(0.75, 0.85))
     B.gem(0.022, loc=(0, -0.026, 0.1), rot=(90, 0, 0), m="glow_holy_white", segs=8)
     B.gem(0.022, loc=(0, 0.026, 0.1), rot=(-90, 0, 0), m="glow_holy_white", segs=8)
     for i, (ang, L) in enumerate(((8, 0.2), (24, 0.17), (40, 0.135), (56, 0.1))):
         feather(B, (0.03, 0, 0.09 + 0.004 * i), ang, L, 0.022 - 0.002 * i,
-                "gold_pale" if i % 2 == 0 else "gold", thick=0.008)
+                "holy_feather" if i % 2 == 0 else "gold", thick=0.008)
     B.sweep([(0.03, 0, 0.075), (0.1, 0, 0.07), (0.16, 0, 0.08)], [0.009, 0.007, 0.0],
             m="glow_holy", segs=6, mirror=True)
     st = [(0.12, 0.037, 0.0075, 0), (0.35, 0.034, 0.007, 0), (0.96, 0.029, 0.0065, 0),

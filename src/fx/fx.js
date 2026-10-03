@@ -85,21 +85,43 @@ export class FX {
   }
 
   // ---------- primitives ----------
-  slash(pos, yaw, { color = 0xffffff, color2 = 0xffffff, radius = 2.6, width = 1.3, angle = Math.PI * 1.1, tilt = 0, flip = false, duration = 0.32, y = 1.1, pitch = 0 } = {}) {
+  slash(pos, yaw, { color = 0xffffff, color2 = 0xffffff, radius = 2.6, width = 1.3, angle = Math.PI * 1.1, tilt = 0, flip = false, duration = 0.32, y = 1.1, pitch = 0, sparks = true } = {}) {
+    // layered slash: wide soft arc + thin white-hot core + sparks flung off the leading edge
     const geo = arcGeometry(radius - width, radius, angle, 40);
     const mat = slashMaterial(color, color2);
+    const geoCore = arcGeometry(radius - width * 0.22, radius + 0.04, angle, 40);
+    const matCore = slashMaterial(color2, 0xffffff);
+    matCore.uniforms.uTrail.value = 0.35;
     const root = new THREE.Object3D();
     root.position.set(pos.x, pos.y + y, pos.z);
     root.rotation.order = 'YXZ';
     root.rotation.set(pitch, yaw, tilt);
     this.scene.add(root);
+    root.updateMatrixWorld(true);
     const m = this.mesh(geo, mat, root);
-    if (flip) m.scale.x = -1;
+    const mc = this.mesh(geoCore, matCore, root);
+    if (flip) { m.scale.x = -1; mc.scale.x = -1; }
+    const c1 = col(color), c2 = col(color2), white = new THREE.Color(1, 1, 1);
+    const hp = new THREE.Vector3();
     return this.timed(duration + 0.18, (k, dt, t) => {
-      mat.uniforms.uProgress.value = Math.min(1, t / duration);
-      mat.uniforms.uFade.value = t > duration ? 1 - (t - duration) / 0.18 : 1;
-      m.scale.setScalar(1 + k * 0.08); if (flip) m.scale.x *= -1;
-    }, () => { this.scene.remove(root); geo.dispose(); mat.dispose(); });
+      const prog = Math.min(1, t / duration);
+      mat.uniforms.uProgress.value = prog; matCore.uniforms.uProgress.value = prog;
+      const fade = t > duration ? 1 - (t - duration) / 0.18 : 1;
+      mat.uniforms.uFade.value = fade; matCore.uniforms.uFade.value = fade * 1.2;
+      const sc = 1 + k * 0.08;
+      m.scale.set(flip ? -sc : sc, 1, sc); mc.scale.copy(m.scale);
+      if (sparks && t < duration) {
+        const u = Math.min(1, prog * 1.35);
+        const a = -angle / 2 + u * angle;
+        hp.set(Math.sin(a) * radius * (flip ? -1 : 1), 0, Math.cos(a) * radius).applyMatrix4(root.matrixWorld);
+        for (let i = 0; i < 3; i++) {
+          const tx = Math.cos(a) * (flip ? -1 : 1), tz = -Math.sin(a);
+          const dir = new THREE.Vector3(tx, (Math.random() - 0.3) * 0.6, tz).transformDirection(root.matrixWorld).multiplyScalar(4 + Math.random() * 6);
+          this.sparks.emit(hp.x, hp.y, hp.z, dir.x, dir.y, dir.z, 0.18 + Math.random() * 0.15, 0.22 + Math.random() * 0.2, white, { color1: c2, drag: 3, gravity: 4 });
+        }
+        this.glow.emit(hp.x, hp.y, hp.z, 0, 0.3, 0, 0.25, 0.5, c1, { color1: c2, drag: 1 });
+      }
+    }, () => { this.scene.remove(root); geo.dispose(); mat.dispose(); geoCore.dispose(); matCore.dispose(); });
   }
 
   shockwave(pos, { color = 0xffffff, radius = 6, duration = 0.5, y = 0.15, width = 0.25, start = 0.2, vertical = false } = {}) {

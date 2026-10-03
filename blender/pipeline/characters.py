@@ -680,7 +680,7 @@ def maiden_parts(p):
 
 
 def staff(parent_sock):
-    glow("glow_spirit", "#ffd0f0", 5.0, color="#ffffff")
+    glow("glow_spirit", "#ff8ad8", 5.0, color="#ffffff")
     B = Builder()
     B.cyl(0.014, 0.012, 1.55, loc=(0, 0, 0.18), m="wood_red", segs=10)
     for z in (-0.5, 0.5, 0.9):

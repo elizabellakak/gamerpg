@@ -46,14 +46,14 @@ export class AuraController {
         if (!o.userData.ownMat) { o.material = o.material.clone(); o.userData.ownMat = true; }
         this.origEmissive.push([o.material, o.material.emissiveIntensity]);
         if (o.material.userData.glow || o.material.emissiveIntensity > 0) {
-          o.material.emissiveIntensity *= 1 + plus * 0.06;
+          o.material.emissiveIntensity = Math.min(o.material.emissiveIntensity * (1 + plus * 0.03), o.material.emissiveIntensity + 1.2);
         }
       }
     });
     if (t.intensity <= 0) return;
     const shell = this.fx.shell(weaponRoot, t.color, t.color2, {
       thickness: (0.008 + t.intensity * 0.009) * scale / Math.max(0.001, weaponRoot.getWorldScale(tmpA).x),
-      intensity: t.intensity * 0.75,
+      intensity: t.intensity * 0.45,
       rainbow: t.rainbow ? 1 : 0,
       flame: t.particles >= 3 ? 1.6 : 0.6,
     });
@@ -64,7 +64,7 @@ export class AuraController {
       if (t.rainbow) this.groundCircle2 = this.fx.magicCircle(hero.position, { color: 0xa070ff, radius: 3.0, duration: Infinity, seed: 8, style: 0, rot: -0.3, follow: hero, y: 0.05, opacity: 0.2 });
     }
     if (hero && plus >= 14) {
-      this.heroShell = this.fx.shell(hero, t.color, t.color2, { thickness: 0.015, intensity: t.rainbow ? 0.35 : 0.22, rainbow: t.rainbow ? 1 : 0, flame: 1.2 });
+      this.heroShell = this.fx.shell(hero, t.color, t.color2, { thickness: 0.012, intensity: t.rainbow ? 0.16 : 0.11, rainbow: t.rainbow ? 1 : 0, flame: 1.0 });
     }
   }
 

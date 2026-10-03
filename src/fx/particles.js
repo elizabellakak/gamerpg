@@ -39,7 +39,7 @@ export class ParticleSystem {
       fragmentShader: `
         uniform sampler2D uTex; varying vec3 vColor; varying float vAlpha;
         void main(){ vec4 t = texture2D(uTex, gl_PointCoord);
-          ${dust ? 'gl_FragColor = vec4(vColor, t.a * vAlpha * 0.55);' : 'gl_FragColor = vec4(vColor * t.rgb * t.a * vAlpha * 1.6, 1.0);'} }`,
+          ${dust ? 'gl_FragColor = vec4(vColor, t.a * vAlpha * 0.55);' : 'gl_FragColor = vec4(vColor * t.rgb * t.a * vAlpha * 1.15, 1.0);'} }`,
       vertexColors: true,
     });
     this.points = new THREE.Points(g, this.mat);

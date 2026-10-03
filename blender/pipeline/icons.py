@@ -27,7 +27,7 @@ def _item_mats():
     define("glass_hi", color="#ffffff", rough=0.05, emit="#ffffff", strength=1.5)
     define("cork", color="#a77b4f", rough=0.8)
     define("ticket_red", color="#9c1424", rough=0.5)
-    glow("glow_star", "#fff0a0", 6.0, color="#ffffff")
+    glow("glow_star", "#ffd84a", 6.0, color="#ffffff")
     glow("glow_blue_rune", "#40b0ff", 4.0)
 
 
