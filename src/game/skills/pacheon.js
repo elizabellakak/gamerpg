@@ -7,6 +7,22 @@ import * as THREE from 'three';
 import { V } from './common.js';
 import { skill, starburst, later, ground, chest, aim, CH } from './heuksal.js';
 import { createHawk } from '../../fx/hawk.js';
+import { basicAdd } from '../../fx/materials.js';
+
+// straight light ribbon between two points that fades out (ADB beam trail, arrow stream)
+let beamGeo = null;
+function beamLine(p, from, to, { thick = 0.15, color = 0x8ad8ff, dur = 0.35, grow = 0.08 } = {}) {
+  if (!beamGeo) beamGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true).rotateX(Math.PI / 2).translate(0, 0, 0.5);
+  const scene = p.game.world.scene;
+  const outer = new THREE.Mesh(beamGeo, basicAdd(color, 0.55)), core = new THREE.Mesh(beamGeo, basicAdd(0xffffff, 0.8));
+  const len = from.distanceTo(to);
+  for (const m of [outer, core]) { m.position.copy(from); m.lookAt(to); m.renderOrder = 6; scene.add(m); }
+  p.fx.timed(dur + grow, (k, dt, t) => {
+    const g = Math.min(1, t / grow), f = t < grow ? 1 : 1 - (t - grow) / dur;
+    outer.scale.set(thick * f, thick * f, len * g); core.scale.set(thick * 0.3 * f, thick * 0.3 * f, len * g);
+    outer.material.opacity = 0.55 * f; core.material.opacity = 0.8 * f;
+  }, () => { scene.remove(outer, core); outer.material.dispose(); core.material.dispose(); });
+}
 
 const TAU = Math.PI * 2;
 const W = new THREE.Color(1, 1, 1);
@@ -51,13 +67,15 @@ function adbCharge(p, dur, size) {
     for (let i = 0; i < Math.round(3 * size); i++) {
       const spread = rnd(0.8) * size;
       const v = f.clone().multiplyScalar(-(5 + Math.random() * 4) * size).addScaledVector(side, spread * 5).add(V(0, rnd(1.5) * size + 0.8, 0));
-      fx.tongue.emit(b.x, b.y, b.z, { vx: v.x, vy: v.y, vz: v.z, life: 0.3, size: 0.16 * size, size1: 0.35 * size, color: i % 2 ? W : c1, color1: c2, alpha: 0.55, alpha1: 0, drag: 2 });
+      fx.tongue.emit(b.x, b.y, b.z, { vx: v.x, vy: v.y, vz: v.z, life: 0.32, size: 0.3 * size, size1: 0.55 * size, color: i % 2 ? W : c1, color1: c2, alpha: 0.8, alpha1: 0, drag: 2 });
+      if (i === 0) fx.cloud.emit(b.x - f.x * 0.6, b.y, b.z - f.z * 0.6, { vx: -f.x * 2, vy: 0.3, vz: -f.z * 2, life: 0.4, size: 0.6 * size, size1: 1.2 * size, color: c1, color1: c2, alpha: 0.35, alpha1: 0, drag: 2 });
     }
     if (Math.random() < 0.5) fx.glow.emit(b.x, b.y, b.z, 0, 0, 0, 0.12, 0.5 * size, c1, { size1: 0.2 });
   });
 }
 function adbShot(p, s, d, { thick = 0.15, mult = 1 } = {}) {
   const fx = p.fx, c = col(0x8ad8ff);
+  beamLine(p, bowPos(p), aim(p, d), { thick: thick * CH * 0.5, color: 0x7ac8ff, dur: 0.35, grow: 0.1 });
   arrowTo(p, d, { speed: 70, trail: (q, dir) => {
     // the beam: a long lingering light-blue ribbon left along the path
     for (let i = 0; i < 3; i++) fx.glow.emit(q.x - dir.x * i * 0.3, q.y - dir.y * i * 0.3, q.z - dir.z * i * 0.3, 0, 0, 0, 0.45, thick * CH * 2.4, c, { color1: col(0x4a6aff), size1: thick * CH });
@@ -89,6 +107,7 @@ function arrowStream(p, s, d, dur, shots) {
   const every = dur / shots;
   fx.timed(dur, (k, dt) => {
     const from = bowPos(p), to = aim(p, d);
+    if (Math.random() < 0.6) beamLine(p, from, to, { thick: 0.15, color: PINK, dur: 0.14, grow: 0.03 });
     // continuous beam of arrows
     for (let i = 0; i < 3; i++) { const u = Math.random(); const q = from.clone().lerp(to, u); fx.tongue.emit(q.x + rnd(0.05), q.y + rnd(0.05), q.z + rnd(0.05), { vx: (to.x - from.x) * 2, vy: 0, vz: (to.z - from.z) * 2, life: 0.1, size: 0.22, size1: 0.1, color: W, color1: c, alpha: 0.9, alpha1: 0 }); }
     if (Math.random() < 0.5) fx.sparks.emit(to.x, to.y, to.z, rnd(3), rnd(3), rnd(3), 0.3, 0.2, W, { drag: 2 });
@@ -242,7 +261,7 @@ function strongCharge(p, dur, crescents, tornado) {
   let acc = 0;
   fx.timed(dur, (k, dt) => {
     acc += dt;
-    if (acc > 0.08) { acc = 0; fx.spikeBurst(p.position.clone().setY(p.position.y + 1.1), new THREE.Color(1, 0.96, 0.75), 2 * CH * (0.85 + Math.random() * 0.3), 0.14); }
+    if (acc > 0.12) { acc = 0; fx.spikeBurst(p.position.clone().setY(p.position.y + 1.1), new THREE.Color(1, 0.88, 0.5), 1.25 * CH * (0.85 + Math.random() * 0.3), 0.14); }
     if (crescents && Math.random() < dt * 6) fx.slash(p.position, Math.random() * TAU, { color: 0xfff6c8, color2: 0xffe080, radius: (tornado ? 1.5 : 1.3) * CH, width: 0.3, angle: Math.PI * 0.8, y: 0.3 + Math.random() * 1.6, tilt: rnd(0.3), duration: 0.25, sparks: false, gain: 0.5 });
   }, () => sh.dispose());
 }

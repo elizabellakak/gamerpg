@@ -24,6 +24,7 @@ async function boot() {
   // debug: advance simulation by N seconds at 60 Hz without rendering (used by automated screenshots)
   window.__advance = (sec) => { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) game.update(1 / 60, 1 / 60); };
   // debug: cast a skill by its effect id (automated skill screenshots)
+  window.__SKILLS = SKILL_INDEX;
   window.__cast = (fx) => {
     const sk = Object.values(SKILL_INDEX).find((s) => s.fx === fx);
     if (!sk) return null;

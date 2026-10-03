@@ -23,8 +23,8 @@ function buildGeos() {
 export function createHawk(color, color2, { dark = false } = {}) {
   if (!geos) buildGeos();
   const c1 = new THREE.Color(color), c2 = new THREE.Color(color2);
-  const mat = new THREE.MeshStandardMaterial({ color: dark ? 0x1a1420 : c1.clone().multiplyScalar(0.5), emissive: c1, emissiveIntensity: dark ? 0.6 : 1.6, roughness: 0.5, flatShading: true, transparent: true, opacity: 1 });
-  const wingMat = new THREE.MeshStandardMaterial({ color: dark ? 0x241830 : c2.clone().multiplyScalar(0.5), emissive: c2, emissiveIntensity: dark ? 0.8 : 1.8, roughness: 0.5, flatShading: true, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
+  const mat = new THREE.MeshStandardMaterial({ color: dark ? 0x1a1420 : c1.clone().multiplyScalar(0.5), emissive: c1, emissiveIntensity: dark ? 0.5 : 0.9, roughness: 0.5, flatShading: true, transparent: true, opacity: 1 });
+  const wingMat = new THREE.MeshStandardMaterial({ color: dark ? 0x241830 : c2.clone().multiplyScalar(0.5), emissive: c2, emissiveIntensity: dark ? 0.6 : 1.0, roughness: 0.5, flatShading: true, side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
   const g = new THREE.Group();
   const body = new THREE.Mesh(geos.body, mat), head = new THREE.Mesh(geos.head, mat), beak = new THREE.Mesh(geos.beak, wingMat), tail = new THREE.Mesh(geos.tail, wingMat);
   const wl = new THREE.Group(), wr = new THREE.Group();
@@ -33,7 +33,7 @@ export function createHawk(color, color2, { dark = false } = {}) {
   wl.add(ml); wr.add(mr);
   wl.position.set(0.06, 0.04, 0.05); wr.position.set(-0.06, 0.04, 0.05);
   g.add(body, head, beak, tail, wl, wr);
-  g.scale.setScalar(1.6);
+  g.scale.setScalar(1.15);
   let ph = Math.random() * 6;
   return {
     group: g, mat, wingMat,

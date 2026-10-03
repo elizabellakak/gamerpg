@@ -823,7 +823,7 @@ const SPELLS = {
           t += dt; acc += dt;
           const reach = Math.min(1, t / 0.6);
           if (t < 4.3) {
-            flameStream(p, origin, dir.clone().setY(-0.08).normalize(), { len: len * reach, width: 1.25 * CH, core: 0xffc050, edge: 0xff4a10, rate: 7, size: 1.3 });
+            flameStream(p, origin, dir.clone().setY(-0.08).normalize(), { len: len * reach, width: 1.25 * CH, core: 0xffa040, edge: 0xff3a08, rate: 5, size: 1.2 });
             if (Math.random() < 0.3) fx.smoke.emit(origin.x + dir.x * len * 0.8, origin.y + 0.8, origin.z + dir.z * len * 0.8, { vx: 0, vy: 1.4, vz: 0, life: 1.4, size: 1.2, size1: 3, color: new THREE.Color(0.25, 0.2, 0.18), color1: new THREE.Color(0.15, 0.13, 0.12), alpha: 0.4, alpha1: 0, drag: 0.6 });
           }
           if (acc >= 0.5 && t > 0.6 && t < 4.3) { acc -= 0.5; inCone(p, origin, dir, len, 1.25 * CH, (m) => dmg(p, s, m, 0.12, { color: 0xff7a20, noFx: true })); }
@@ -846,8 +846,8 @@ const SPELLS = {
       if (rt < 0.6 || rt > 3.3) return;
       const from = tip(p), dir = aimAt(d).sub(from).normalize();
       const len = 4.6 * CH;
-      flameStream(p, from, dir, { len, width: 1.4 * CH, core: 0xffd080, edge: 0xff30a0, rate: 6, size: 1.35 });
-      flameStream(p, from, dir, { len: len * 0.9, width: 0.6 * CH, core: 0xfff0c0, edge: 0xffa040, rate: 2, size: 0.8 });
+      flameStream(p, from, dir, { len, width: 1.4 * CH, core: 0xffb060, edge: 0xff2a90, rate: 5, size: 1.3 });
+      flameStream(p, from, dir, { len: len * 0.9, width: 0.6 * CH, core: 0xffe0a0, edge: 0xff9030, rate: 1, size: 0.7 });
       d.acc += dt;
       if (d.acc >= 0.4) { d.acc -= 0.4; inCone(p, from, flatDir(V(), dir), len, 1.4 * CH, (m) => dmg(p, s, m, 0.16, { color: 0xff50a0, noFx: true })); }
     } },
@@ -906,7 +906,7 @@ const SPELLS = {
       const at = ground(p, p.position), fx = p.fx;
       fx.decal(at, { tex: 'disc', color: 0x9aff40, radius: 1 * CH, duration: 0.3, spin: 0, opacity: 0.8, fadeIn: 0.02, fadeOut: 0.2 });
       later(p, 0.1, () => {
-        fx.groundNova(at, { color: 0x8aff30, radius: 3.5 * CH, duration: 0.6, opacity: 0.5 });
+        fx.groundNova(at, { color: 0x8aff30, radius: 3.5 * CH, duration: 0.6, opacity: 0.32 });
         for (let i = 0; i < 10; i++) later(p, i * 0.04, () => {
           const a = Math.random() * TAU, r1 = Math.random() * 3 * CH, r2 = r1 + 0.8 + Math.random();
           fx.lightning(V(at.x + Math.cos(a) * r1, at.y + 0.15, at.z + Math.sin(a) * r1), V(at.x + Math.cos(a + 0.3) * r2, at.y + 0.15, at.z + Math.sin(a + 0.3) * r2), { color: 0x9aff40, core: 0xf0ffd0, width: 0.05, duration: 0.18, segments: 6, jitter: 0.4, branches: 0 });
