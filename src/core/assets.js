@@ -4,6 +4,8 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { WEAPONS } from '../data/weapons.js';
 
 const BASE = import.meta.env.BASE_URL + 'assets/';
+// hosted build can ship models as embedded glTF JSON (VITE_MODEL_EXT=.gltf.json)
+const MODEL_EXT = import.meta.env.VITE_MODEL_EXT || '.glb';
 
 export const MODEL_LIST = [
   'models/hero', 'models/npc_smith', 'models/npc_maiden',
@@ -34,7 +36,7 @@ class Assets {
     const total = MODEL_LIST.length + ICON_LIST.length;
     const tick = () => { done++; onProgress && onProgress(done / total); };
     const modelJobs = MODEL_LIST.map((path) => new Promise((resolve) => {
-      loader.load(BASE + path + '.glb', (gltf) => {
+      loader.load(BASE + path + MODEL_EXT, (gltf) => {
         const key = path.split('/').pop();
         gltf.scene.traverse((o) => {
           if (o.isMesh) {

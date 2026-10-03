@@ -246,6 +246,16 @@ export class UI {
     if (this.panel === 'enhance' && !this.busy) { /* static */ }
   }
 
+  // in-game modal (the artifact viewer blocks alert/confirm)
+  dialog(html, { ok = 'ตกลง', cancel = 'ยกเลิก', danger = false } = {}) {
+    return new Promise((resolve) => {
+      const wrap = h('div', 'dlg-wrap');
+      wrap.innerHTML = `<div class="dlg glass"><div class="dlg-body">${html}</div><div class="dlg-btns">${cancel ? `<button class="btn" data-v="0">${cancel}</button>` : ''}<button class="btn ${danger ? 'red' : 'gold'}" data-v="1">${ok}</button></div></div>`;
+      this.root.appendChild(wrap);
+      wrap.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => { audio.play('click'); wrap.remove(); resolve(b.dataset.v === '1'); }));
+    });
+  }
+
   // ---------------- feedback ----------------
   toast(text, type = '') {
     const t = h('div', 'toast ' + type, text);
@@ -438,9 +448,9 @@ export class UI {
       </div>`;
     $('#d-eq', det).addEventListener('click', () => { if (eq) return; this.game.equip(w.uid); refresh(); });
     $('#d-enh', det).addEventListener('click', () => { this.selectedUid = w.uid; this.closePanels(true); this.openPanel('enhance'); });
-    $('#d-dis', det).addEventListener('click', () => {
+    $('#d-dis', det).addEventListener('click', async () => {
       if (eq) return;
-      if (RARITY[d.rarity].order >= 2 && !confirm(`ย่อยสลาย ${d.name} +${w.plus}?`)) return;
+      if (RARITY[d.rarity].order >= 2 && !(await this.dialog(`ย่อยสลาย <b>${d.name} +${w.plus}</b> ?`, { ok: 'ย่อยสลาย', danger: true }))) return;
       const gain = dismantle(this.s, w.uid);
       if (gain) { audio.play('crash'); this.toast('ได้รับ: ' + this.rewardText(gain), 'good'); this.selectedUid = this.s.equipped; refresh(); this.game.save(); }
     });
@@ -566,7 +576,7 @@ export class UI {
     $('#g-1', p).addEventListener('click', () => this.pull(p, 1));
     $('#g-10', p).addEventListener('click', () => this.pull(p, 10));
     $('#g-rates', p).addEventListener('click', () => {
-      alert(`อัตราการออก\nUR (เทพนิยาย): ${GACHA.rates.UR}%\nSSR (ตำนาน): ${GACHA.rates.SSR}%\nSR (ล้ำค่า): ${GACHA.rates.SR}%\nR (หายาก): ${GACHA.rates.R}%\nN (ธรรมดา): ${GACHA.rates.N}%\n\n• การันตี SSR ขึ้นไปทุก ${GACHA.pitySSR} ครั้ง\n• การันตี UR ที่ ${GACHA.pityUR} ครั้ง (เรทเพิ่มขึ้นหลัง 90 ครั้ง)\n• สุ่ม 10 ครั้ง การันตี SR ขึ้นไป 1 ชิ้น\n• UR ที่ออก 50% เป็น ${WEAPON_BY_ID[GACHA.rateUp].name}`);
+      this.dialog(`<h3>อัตราการออก</h3><div class="rates"><span style="color:var(--UR)">UR เทพนิยาย</span><b>${GACHA.rates.UR}%</b><span style="color:var(--SSR)">SSR ตำนาน</span><b>${GACHA.rates.SSR}%</b><span style="color:var(--SR)">SR ล้ำค่า</span><b>${GACHA.rates.SR}%</b><span style="color:var(--R)">R หายาก</span><b>${GACHA.rates.R}%</b><span style="color:var(--N)">N ธรรมดา</span><b>${GACHA.rates.N}%</b></div><p>• การันตี SSR ขึ้นไปทุก ${GACHA.pitySSR} ครั้ง<br>• การันตี UR ที่ ${GACHA.pityUR} ครั้ง (เรทเพิ่มขึ้นหลัง 90 ครั้ง)<br>• สุ่ม 10 ครั้ง การันตี SR ขึ้นไป 1 ชิ้น<br>• UR ที่ออก 50% เป็น ${WEAPON_BY_ID[GACHA.rateUp].name}</p>`, { ok: 'ปิด', cancel: null });
     });
   }
 
@@ -690,6 +700,6 @@ export class UI {
       this.game.recalcStats(); this.game.player.equip(equippedWeapon(this.s)); this.refreshSkills();
       this.refreshAll(); this.game.save();
     });
-    $('#s-reset', body).addEventListener('click', () => { if (confirm('ล้างข้อมูลทั้งหมดและเริ่มใหม่?')) { resetState(); window.onbeforeunload = null; this.game.save = () => {}; location.reload(); } });
+    $('#s-reset', body).addEventListener('click', async () => { if (await this.dialog('ล้างข้อมูลทั้งหมดและเริ่มใหม่?', { ok: 'ล้างเซฟ', danger: true })) { resetState(); window.onbeforeunload = null; this.game.save = () => {}; location.reload(); } });
   }
 }

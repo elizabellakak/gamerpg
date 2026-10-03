@@ -13,6 +13,8 @@ npm run build      # build ไฟล์ไปที่ dist/ (อัปโหล
 
 ใส่ `?q=low` ต่อท้าย URL สำหรับเครื่องสเปกต่ำ / มือถือรุ่นเก่า
 
+`npm run build:hosted` สร้างเวอร์ชันสำหรับโฮสต์ที่ไม่เสิร์ฟไฟล์ `.glb` (แปลงโมเดลเป็น glTF JSON แบบฝัง buffer) ลงใน `dist-hosted/`
+
 ### สร้างโมเดลใหม่ด้วย Blender
 
 ```bash
