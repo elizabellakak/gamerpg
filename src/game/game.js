@@ -9,7 +9,8 @@ import { DamageText } from '../ui/dmgtext.js';
 import { UI } from '../ui/ui.js';
 import { audio } from '../core/audio.js';
 import { loadState, saveState } from '../core/save.js';
-import { playerStats, equippedWeapon, xpToNext, addItem, questEvent } from '../systems/progress.js';
+import { playerStats, equippedWeapon, xpToNext, addItem, questEvent, gainMastery } from '../systems/progress.js';
+import { CLASSES } from '../data/weapons.js';
 import { LOOT, ZONES } from '../data/monsters.js';
 import { ITEMS } from '../data/weapons.js';
 
@@ -50,6 +51,7 @@ export class Game {
     this.cam.yaw = 0; // camera behind (+z) looking toward -z
     this.ui.build();
     this.ui.refreshAll();
+    this.ui.refreshSkills();
     setInterval(() => this.save(), 15000);
     window.addEventListener('beforeunload', () => this.save());
   }
@@ -71,8 +73,9 @@ export class Game {
     this.state.equipped = uid;
     const w = equippedWeapon(this.state);
     w.isNew = false;
-    this.player.equip(w);
     this.recalcStats();
+    this.player.equip(w);
+    this.ui.refreshSkills();
     this.fx.pillar(this.player.position, { color: this.player.elColor, color2: this.player.elColor2, radius: 0.9, height: 7, duration: 0.8 });
     this.fx.shockwave(this.player.position, { color: this.player.elColor, radius: 3, duration: 0.5 });
     audio.play('success');
@@ -99,8 +102,9 @@ export class Game {
     this.input.enabled = true;
     // re-apply aura of equipped weapon (plus may have changed)
     const w = equippedWeapon(this.state);
-    this.player.equip(w);
     this.recalcStats();
+    this.player.equip(w);
+    this.ui.refreshSkills();
   }
 
   cinematic(dur, focus) {
@@ -114,6 +118,15 @@ export class Game {
     const gold = Math.round((m.tpl.gold[0] + Math.random() * (m.tpl.gold[1] - m.tpl.gold[0])) * (1 + (m.level - 1) * 0.12));
     s.gold += gold;
     this.gainXp(m.xp);
+    const cls = this.player.cls;
+    const mup = gainMastery(s, cls, Math.round(m.xp * 0.8));
+    if (mup) {
+      this.recalcStats();
+      this.ui.masteryUp(cls, mup);
+      audio.play('levelup');
+      this.fx.magicCircle(this.player.position, { color: this.player.elColor, radius: 2.4, duration: 1.6, style: 2, seed: 151, rot: 2.5 });
+      this.fx.rise(this.player.position, { color: this.player.elColor2, color1: this.player.elColor, count: 50, radius: 1.4, speed: 5, life: 1.1, size: 0.3 });
+    }
     const drops = [];
     for (const [id, chance, a, b] of LOOT[m.id] || []) {
       if (Math.random() < chance) {
@@ -273,6 +286,7 @@ export class Game {
     if (input.wasPressed('e')) this.usePotion('mp');
     if (input.wasPressed('b') || input.wasPressed('i')) this.ui.openPanel('inventory');
     if (input.wasPressed('m')) this.ui.openPanel('warp');
+    if (input.wasPressed('k')) this.ui.openPanel('mastery');
     if (input.wasPressed('f') || input.wasPressed('interact')) this.interact();
     if (input.wasPressed('escape')) this.ui.closePanels();
 

@@ -3,6 +3,8 @@ import { assets } from '../core/assets.js';
 import { MONSTERS, scaledStats } from '../data/monsters.js';
 
 const tmp = new THREE.Vector3();
+const STUN_COL = new THREE.Color(1, 0.9, 0.3);
+const SLOW_COL = new THREE.Color(0.5, 0.85, 1);
 let barTex = null;
 function getBarTex() {
   if (barTex) return barTex;
@@ -132,8 +134,20 @@ export class Monster {
       for (const { m, e, i } of this.mats) { m.emissive.copy(e).lerp(new THREE.Color(1, 1, 1), k); m.emissiveIntensity = Math.max(i, k * 1.5); }
     }
 
-    if (this.tpl.boss) this.updateBoss(dt, distP);
+    if (this.slow > 0) this.slow -= dt;
+    if (this.stun > 0) {
+      this.stun -= dt;
+      this.vel.multiplyScalar(Math.pow(0.05, dt));
+      if (Math.random() < dt * 8) {
+        const a = g.time * 6 + Math.random();
+        g.fx.sparks.emit(this.position.x + Math.cos(a) * 0.5, this.position.y + this.tpl.height + 0.2, this.position.z + Math.sin(a) * 0.5, 0, 0.3, 0, 0.4, 0.35, STUN_COL, { drag: 1 });
+      }
+    } else if (this.tpl.boss) this.updateBoss(dt, distP);
     else this.updateNormal(dt, distP);
+    if (this.slow > 0) {
+      this.vel.multiplyScalar(Math.pow(0.15, dt));
+      if (Math.random() < dt * 4) g.fx.glow.emit(this.position.x + (Math.random() - 0.5), this.position.y + Math.random() * this.tpl.height, this.position.z + (Math.random() - 0.5), 0, 0.5, 0, 0.6, 0.3, SLOW_COL, { drag: 1 });
+    }
 
     // integrate
     this.position.addScaledVector(this.vel, dt);

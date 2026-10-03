@@ -3,6 +3,7 @@ import { ENHANCE_TABLE, MAX_PLUS, CRASH_TO, CRASH_CHANCE, FAILSTACK_BONUS, BLESS
 import { GACHA, GACHA_FILLERS, DISMANTLE } from '../data/gacha.js';
 import { WEAPONS } from '../data/weapons.js';
 import { QUESTS } from '../data/quests.js';
+import { masteryEffects, masteryXpToNext, MASTERY_MAX } from '../data/mastery.js';
 
 export function xpToNext(level) { return Math.round(60 * Math.pow(level, 1.5) + 60); }
 
@@ -10,22 +11,46 @@ export function equippedWeapon(state) {
   return state.weapons.find((w) => w.uid === state.equipped) || state.weapons[0];
 }
 
+export function weaponClass(state) {
+  const w = equippedWeapon(state);
+  return w ? WEAPON_BY_ID[w.id].cls : 'sword';
+}
+
 export function playerStats(state) {
   const lv = state.level;
   const w = equippedWeapon(state);
   const ws = w ? weaponStats(w) : { atk: 0, crit: 0, cdmg: 0, spd: 1 };
+  const cls = weaponClass(state);
+  const me = masteryEffects(state, cls);
   const s = {
     maxHp: 520 + (lv - 1) * 68,
     maxMp: 200 + (lv - 1) * 9,
     atk: 28 + (lv - 1) * 7 + ws.atk,
     def: 12 + (lv - 1) * 3.2,
-    crit: 8 + ws.crit,
-    cdmg: 150 + ws.cdmg,
-    spd: ws.spd,
+    crit: 8 + ws.crit + (me.crit || 0),
+    cdmg: 150 + ws.cdmg + (me.cdmg || 0),
+    spd: ws.spd * (1 + (me.spdPct || 0) / 100),
   };
-  s.def = Math.round(s.def);
-  s.cp = Math.round(s.atk * 9 + s.maxHp * 0.6 + s.def * 6 + s.crit * 40 + s.cdmg * 6);
+  s.maxHp = Math.round(s.maxHp * (1 + (me.hpPct || 0) / 100));
+  s.maxMp = Math.round(s.maxMp * (1 + (me.mpPct || 0) / 100));
+  s.atk = Math.round(s.atk * (1 + (me.atkPct || 0) / 100));
+  s.def = Math.round(s.def * (1 + (me.defPct || 0) / 100));
+  s.cls = cls;
+  s.mastery = me;
+  s.cp = Math.round(s.atk * 9 + s.maxHp * 0.6 + s.def * 6 + s.crit * 40 + s.cdmg * 6 + me.skillPct * 60);
   return s;
+}
+
+// returns new level if leveled up
+export function gainMastery(state, cls, xp) {
+  state.mastery = state.mastery || {};
+  const m = state.mastery[cls] || (state.mastery[cls] = { lv: 1, xp: 0 });
+  if (m.lv >= MASTERY_MAX) return 0;
+  m.xp += xp;
+  let up = 0;
+  while (m.lv < MASTERY_MAX && m.xp >= masteryXpToNext(m.lv)) { m.xp -= masteryXpToNext(m.lv); m.lv++; up = m.lv; }
+  if (m.lv >= MASTERY_MAX) m.xp = 0;
+  return up;
 }
 
 export function addItem(state, id, qty) {

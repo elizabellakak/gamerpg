@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ParticleSystem, makeSparkSystem } from './particles.js';
 import {
   arcGeometry, slashMaterial, ringMaterial, pillarMaterial, magicCircleMaterial, tornadoMaterial,
-  decalMaterial, ghostMaterial, basicAdd, globalUniforms, auraShellMaterial, scorchMaterial,
+  decalMaterial, ghostMaterial, basicAdd, globalUniforms, auraShellMaterial, scorchMaterial, hexShieldMaterial, spiritMaterial,
 } from './materials.js';
 
 const tmpV = new THREE.Vector3();
@@ -63,6 +63,7 @@ export class FX {
     best.position.copy(pos);
     best.color.set(color);
     best.distance = distance;
+    intensity *= 0.5;
     best.userData.t = 0; best.userData.dur = dur; best.userData.peak = intensity;
     best.intensity = intensity;
   }
@@ -267,6 +268,141 @@ export class FX {
       mat.uniforms.uGlow.value = Math.max(0, 1 - k * 2.2);
       mat.uniforms.uLife.value = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
     }, () => { this.scene.remove(m); mat.dispose(); });
+  }
+
+  // Erupting spikes (rock or ice) around a point
+  spikes(pos, { color = 0x6fe7ff, count = 7, radius = 1.4, height = 2.2, duration = 1.4, ice = true } = {}) {
+    if (!this._spikeGeo) this._spikeGeo = new THREE.ConeGeometry(0.28, 1, 5, 1).translate(0, 0.5, 0);
+    const mat = ice
+      ? new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.35), emissive: color, emissiveIntensity: 1.6, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.92, flatShading: true })
+      : new THREE.MeshStandardMaterial({ color: 0x4a3f36, emissive: color, emissiveIntensity: 0.0, roughness: 0.9, flatShading: true, transparent: true });
+    const im = new THREE.InstancedMesh(this._spikeGeo, mat, count);
+    im.castShadow = true;
+    const data = [];
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + Math.random() * 0.6, r = i === 0 ? 0 : radius * (0.4 + Math.random() * 0.6);
+      const x = pos.x + Math.cos(a) * r, z = pos.z + Math.sin(a) * r;
+      data.push({ x, z, y: this.heightAt(x, z), h: height * (i === 0 ? 1.2 : 0.5 + Math.random() * 0.6), w: 0.8 + Math.random() * 0.8,
+        rx: (Math.random() - 0.5) * 0.6 + (r ? Math.sin(a) * 0.25 : 0), rz: (Math.random() - 0.5) * 0.6 - (r ? Math.cos(a) * 0.25 : 0), d: Math.random() * 0.08 });
+    }
+    this.scene.add(im);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), p = new THREE.Vector3();
+    return this.timed(duration, (k, dt, t) => {
+      for (let i = 0; i < count; i++) {
+        const s = data[i];
+        const tt = Math.max(0, t - s.d);
+        const up = Math.min(1, tt / 0.1);
+        const down = t > duration - 0.35 ? 1 - (t - (duration - 0.35)) / 0.35 : 1;
+        const hh = s.h * (1 - Math.pow(1 - up, 3)) * Math.max(0.001, down);
+        e.set(s.rx, i, s.rz); q.setFromEuler(e); sc.set(s.w, hh, s.w); p.set(s.x, s.y - 0.1, s.z);
+        m4.compose(p, q, sc); im.setMatrixAt(i, m4);
+      }
+      im.instanceMatrix.needsUpdate = true;
+      if (!ice) mat.emissiveIntensity = Math.max(0, 1.5 - t * 2);
+    }, () => { this.scene.remove(im); mat.dispose(); im.dispose(); });
+  }
+
+  // Spiral drill cone pointing along dir
+  drill(from, dir, { length = 8, radius = 1.4, color = 0xffffff, color2 = 0xffffff, duration = 0.4 } = {}) {
+    // wide end at the origin, point leading along +Z
+    const geo = new THREE.ConeGeometry(radius, length, 32, 1, true).rotateX(Math.PI / 2).translate(0, 0, length / 2);
+    const mats = [tornadoMaterial(color, color2), tornadoMaterial(color2, 0xffffff)];
+    mats[0].uniforms.uSpeed.value = 6; mats[1].uniforms.uSpeed.value = 9;
+    const root = new THREE.Object3D();
+    root.position.copy(from);
+    root.lookAt(from.clone().add(dir));
+    const m1 = this.mesh(geo, mats[0], root); const m2 = this.mesh(geo, mats[1], root);
+    m2.scale.set(0.6, 0.6, 1.02);
+    this.scene.add(root);
+    return this.timed(duration, (k, dt) => {
+      const grow = Math.min(1, k * 5);
+      root.scale.set(1, 1, grow);
+      m1.rotation.z += dt * 14; m2.rotation.z -= dt * 20;
+      const f = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+      mats[0].uniforms.uOpacity.value = f; mats[1].uniforms.uOpacity.value = f;
+    }, () => { this.scene.remove(root); geo.dispose(); mats.forEach((m) => m.dispose()); });
+  }
+
+  // Straight energy beam with spiral sleeve and travelling rings
+  beam(from, dir, { length = 40, radius = 1.2, color = 0xffffff, color2 = 0xffffff, duration = 1.0 } = {}) {
+    const root = new THREE.Object3D();
+    root.position.copy(from);
+    root.lookAt(from.clone().add(dir));
+    this.scene.add(root);
+    const core = new THREE.CylinderGeometry(radius * 0.35, radius * 0.35, length, 20, 1, true).rotateX(Math.PI / 2).translate(0, 0, length / 2);
+    const sleeve = new THREE.CylinderGeometry(radius, radius, length, 32, 1, true).rotateX(Math.PI / 2).translate(0, 0, length / 2);
+    const mCore = basicAdd(0xffffff, 1);
+    const mSleeve = tornadoMaterial(color, color2); mSleeve.uniforms.uSpeed.value = 8;
+    const mSleeve2 = tornadoMaterial(color2, color); mSleeve2.uniforms.uSpeed.value = -6;
+    const a = this.mesh(core, mCore, root), b = this.mesh(sleeve, mSleeve, root), c = this.mesh(sleeve, mSleeve2, root);
+    c.scale.set(1.5, 1.5, 1);
+    const rings = [];
+    for (let i = 0; i < 5; i++) {
+      const rm = ringMaterial(color2, { noise: false });
+      const r = this.mesh(this.planeGeo, rm, root);
+      r.rotation.x = Math.PI / 2; r.userData.z = (i / 5) * length; r.userData.mat = rm;
+      rings.push(r);
+    }
+    return this.timed(duration, (k, dt) => {
+      const w = k < 0.1 ? k / 0.1 : k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
+      root.scale.set(w, w, 1);
+      b.rotation.z += dt * 10; c.rotation.z -= dt * 7;
+      mCore.opacity = w;
+      for (const r of rings) {
+        r.userData.z = (r.userData.z + dt * length * 1.2) % length;
+        r.position.z = r.userData.z;
+        const s = radius * 3.2 * (0.7 + 0.3 * Math.sin(r.userData.z));
+        r.scale.set(s, 1, s);
+        r.userData.mat.uniforms.uOpacity.value = w * 0.8;
+      }
+    }, () => { this.scene.remove(root); core.dispose(); sleeve.dispose(); mCore.dispose(); mSleeve.dispose(); mSleeve2.dispose(); rings.forEach((r) => r.userData.mat.dispose()); });
+  }
+
+  // Hex barrier dome following an object
+  dome(follow, { radius = 2.2, color = 0xffd86b, duration = 6 } = {}) {
+    const geo = new THREE.IcosahedronGeometry(radius, 4);
+    const mat = hexShieldMaterial(color);
+    const m = this.mesh(geo, mat);
+    let t = 0, dur = duration;
+    return this.add({
+      mat, hit() { mat.uniforms.uHit.value = 1; }, end() { dur = Math.min(dur, t + 0.3); },
+      update: (dt) => {
+        t += dt;
+        m.position.copy(follow.position); m.position.y += radius * 0.45;
+        const k = Math.min(1, t / 0.25);
+        m.scale.setScalar(0.6 + 0.4 * (1 - Math.pow(1 - k, 3)));
+        mat.uniforms.uOpacity.value = Math.min(k, Math.max(0, (dur - t) / 0.3));
+        mat.uniforms.uHit.value *= Math.pow(0.02, dt);
+        m.rotation.y += dt * 0.3;
+        return t < dur;
+      },
+      dispose: () => { this.scene.remove(m); geo.dispose(); mat.dispose(); },
+    });
+  }
+
+  // Spirit (e.g. dragon) flying along a curve; onArrive when head reaches end
+  spirit(points, { color = 0xff7a1f, color2 = 0xffd04a, radius = 0.9, duration = 1.4, len = 0.4, onArrive = null } = {}) {
+    const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+    const geo = new THREE.TubeGeometry(curve, 220, radius, 12, false);
+    // taper toward tail via vertex scaling around the curve
+    const mat = spiritMaterial(color, color2);
+    mat.uniforms.uLen.value = len;
+    const m = this.mesh(geo, mat);
+    const head = new THREE.Vector3();
+    let arrived = false;
+    const c2 = col(color2), c1 = col(color);
+    return this.timed(duration, (k) => {
+      const h = Math.min(1 + len, k * (1 + len) * 1.15);
+      mat.uniforms.uHead.value = h;
+      const hk = Math.min(1, h);
+      curve.getPoint(hk, head);
+      if (h < 1) {
+        this.glow.emit(head.x, head.y, head.z, 0, 0, 0, 0.35, radius * 2.4, c2, { color1: c1, size1: 0.2 });
+        for (let i = 0; i < 3; i++) this.sparks.emit(head.x, head.y, head.z, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, 0.3, 0.3, c2, { color1: c1, drag: 2 });
+      }
+      if (!arrived && h >= 1) { arrived = true; onArrive && onArrive(head.clone()); }
+      mat.uniforms.uOpacity.value = k > 0.85 ? 1 - (k - 0.85) / 0.15 : 1;
+    }, () => { this.scene.remove(m); geo.dispose(); mat.dispose(); });
   }
 
   // Snapshot of an object's meshes as glowing ghost

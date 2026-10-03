@@ -38,15 +38,17 @@ works when no model has that name.
 * Characters and monsters stand on Z=0 with the origin at the feet and face Blender -Y
   (three.js +Z). Props have their origin at the base center.
 * Names contain only letters, digits and underscores.
-* Meshes are rigid parts parented to bones. There are no skin weights: each bone node has a
-  child mesh node named `<asset>_<bone>`. A glTF skin is still written, so three.js creates
-  `Bone` objects.
+* Meshes are rigid parts parented to bones: each bone node has a child mesh node named
+  `<asset>_<bone>`. The one exception is the dragon's wing membranes (see below). A glTF skin
+  is always written, so three.js creates `Bone` objects.
 * Animations are separate glTF animations (`ACTIONS` mode) at 30 fps. Every bone is keyed in
   every clip. Idle, Run and Move loop seamlessly (the last frame equals the first). Die holds
   its last pose, so use `clampWhenFinished`. Root motion is vertical only, except Skill, which
   rotates `root` 360 degrees about the vertical axis.
 * Materials are plain Principled BSDF: base color, metallic, roughness and emission.
-  Emissive parts use strength 2 to 8 so the game's bloom picks them up. There are no textures,
+  Emission strength is capped at 2.5 (`EMISSION_CAP` in `core.py`) so bloom keeps glows
+  colored instead of blowing them out to white. Glow materials use a darkened copy of their
+  emission color as base color, which keeps them saturated. There are no textures,
   no UVs and no Draco compression.
 
 ### Hero (`models/hero.glb`)
@@ -55,6 +57,27 @@ upper_arm_R forearm_R hand_R thigh_L shin_L foot_L thigh_R shin_R foot_R cape_1 
 `weapon_socket` is a child node of `hand_R` at the palm. Attach a weapon GLB scene to it with
 an identity transform: the weapon's +Y axis in glTF (Blender +Z) points along the blade.
 Clips: `Idle Run Attack1 Attack2 Attack3 Skill Cast Dash Hit Die`.
+
+Weapon-class sockets and clips (`pipeline/class_anims.py`):
+* `bow_socket` is a child of `hand_L` (left palm). A bow GLB attached with an identity
+  transform stands upright, with its face (glTF +Z) forward and the string toward the chest,
+  in the aiming poses.
+* `shield_socket` is a child of `forearm_L` (outer forearm). A shield attached with an
+  identity transform faces forward and stands upright in the guard poses.
+* Both use the same rest orientation as `weapon_socket` (local glTF +Y forward from the fist,
+  local +X up).
+* In two-handed clips the left hand holds the haft of the weapon in `weapon_socket`.
+
+| class | clips |
+|---|---|
+| Sword&Shield | `SS_Idle SS_Run SS_Bash SS_Block` (the sword combo stays Attack1-3) |
+| Greatsword | `GS_Idle GS_Run GS_Attack1 GS_Attack2 GS_Attack3 GS_Spin GS_Leap` |
+| Spear | `SP_Idle SP_Run SP_Attack1 SP_Attack2 SP_Attack3 SP_Lunge SP_Twirl SP_Jab` |
+| Bow | `BW_Idle BW_Run BW_Shoot BW_Aim BW_Up BW_Backflip` |
+| Staff | `ST_Idle ST_Run ST_Attack1 ST_Attack2 ST_Attack3 ST_Channel ST_Point` |
+
+The bowstring is static geometry. To show it pulled during a draw, the game can draw a line
+from `tip` to the right hand to `base`.
 
 ### NPCs
 `npc_smith.glb` (armature `SmithRig`, hammer node `smith_hammer`) and `npc_maiden.glb`
@@ -66,10 +89,31 @@ Origin is the grip point and the blade points along Blender +Z (glTF +Y). Each f
 node `<id>` plus empties `tip` (blade tip or far end) and `base` (start of the blade, just
 above the guard), which the game uses for trails.
 
+* **Bows** (`hunter_bow elven_longbow gale_bow starfall_bow seraph_bow`): limbs run along glTF
+  +-Y, the face points glTF +Z and the string sits on the -Z side. `tip` is the upper limb tip,
+  `base` the lower limb tip, and there is an extra `string_mid` empty.
+* **Shields** (`shield_iron shield_knight shield_aegis`): origin at the forearm or handle, face
+  toward glTF +Z, height along +Y. They also have `tip` (top) and `base` (bottom) empties.
+  Shields have no icons.
+* The other new weapons (`ember_staff astral_scepter void_staff iron_spear dragon_lance
+  steel_claymore`) follow the standard contract. They are defined in `pipeline/weapons2.py`.
+
 ### Monsters (`models/monsters/<id>.glb`)
-Clips: `Idle Move Attack Hit Die`. The dragon also has `Attack2` (fire-breath pose) and `Fly`.
+Clips: `Idle Move Attack Hit Die`. The dragon also has `Attack2` (rear up, then fire-breath
+pose with the jaw open) and `Fly`.
 The goblin holds a `goblin_club` on its `weapon_socket`. The golem has extra bones
 `shoulder_rock_L` and `shoulder_rock_R` for its floating rocks.
+
+The dragon (`pipeline/dragon.py`, armature `DragonRig`) has these bones:
+* body: `root hips chest`
+* neck and head: `neck_1`..`neck_4 head jaw`
+* tail: `tail_1`..`tail_5`
+* legs: `leg_{FL,FR,BL,BR}_{1..4}` (digitigrade; `_4` is the foot and toes)
+* wings: `wing_{L,R}_1` (upper arm), `_2` (forearm), and fingers `_3`, `_4`, `_5`
+
+Its wing membranes are two skinned meshes, `dragon_wing_L` and `dragon_wing_R`, weighted
+between consecutive finger and arm bones and the body, so they stay connected while flapping.
+They load as `SkinnedMesh` in three.js. All other dragon parts are rigid.
 
 ### Props (`models/props/<id>.glb`)
 One mesh node named `<id>`. `gacha_shrine` also has a child node `gacha_crystal`, centered on

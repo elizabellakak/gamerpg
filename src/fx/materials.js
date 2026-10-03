@@ -48,7 +48,7 @@ export function slashMaterial(color, color2) {
         float a = trail * (edge * 1.3 + streak * 0.35 * vUv.y) * (0.6 + n * 0.8);
         vec3 col = mix(uColor, uColor2, smoothstep(0.75, 1.0, vUv.y));
         col += vec3(1.0) * smoothstep(0.93, 1.0, vUv.y) * trail;
-        gl_FragColor = vec4(col * a * 2.2 * uFade, 1.0);
+        gl_FragColor = vec4(col * a * 1.7 * uFade, 1.0);
       }`,
   });
 }
@@ -67,8 +67,8 @@ export function ringMaterial(color, { width = 0.25, noise = true } = {}) {
         float ring = smoothstep(0.55, 0.92, r) * smoothstep(1.0, 0.94, r);
         float ang = atan(p.y, p.x);
         float n = mix(1.0, texture2D(uNoise, vec2(ang * 0.5 + uTime * 0.2, r - uTime * 0.5)).r * 1.6, uUseNoise);
-        vec3 col = uColor + vec3(1.0) * smoothstep(0.9, 0.97, r) * 0.6;
-        gl_FragColor = vec4(col * ring * n * uOpacity * 1.8, 1.0);
+        vec3 col = uColor + vec3(1.0) * smoothstep(0.9, 0.97, r) * 0.3;
+        gl_FragColor = vec4(col * ring * n * uOpacity * 1.2, 1.0);
       }`,
   });
 }
@@ -111,7 +111,7 @@ export function magicCircleMaterial(color, seed = 1, style = 0) {
         float m = pow(texture2D(uMap, q).r, 1.7);
         float glow = smoothstep(1.0, 0.0, r) * 0.08;
         float wave = smoothstep(0.08, 0.0, abs(r - fract(uTime * 0.6))) * 0.6 * uPulse;
-        vec3 col = uColor * (m * 1.5 + glow + wave) + vec3(1.0) * m * 0.25;
+        vec3 col = uColor * (m * 1.1 + glow + wave) + vec3(1.0) * m * 0.12;
         gl_FragColor = vec4(col * uOpacity, 1.0);
       }`,
   });
@@ -132,7 +132,7 @@ export function tornadoMaterial(color, color2 = 0xffffff) {
         float v = smoothstep(0.0, 0.15, vUv.y) * smoothstep(1.0, 0.6, vUv.y);
         float a = v * (n * 0.6 + streak * 1.4);
         vec3 col = mix(uColor, uColor2, streak);
-        gl_FragColor = vec4(col * a * uOpacity * 0.75, 1.0);
+        gl_FragColor = vec4(col * a * uOpacity * 0.6, 1.0);
       }`,
   });
 }
@@ -263,6 +263,53 @@ export function scorchMaterial(color = 0xff7a20) {
         col += uColor * cracks * 3.0 * uGlow;
         float alpha = max(burn * 0.75, cracks) * uLife;
         gl_FragColor = vec4(col, alpha);
+      }`,
+  });
+}
+
+// Hexagon energy dome (barrier)
+export function hexShieldMaterial(color) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: { uColor: { value: new THREE.Color(color) }, uOpacity: { value: 1 }, uTime: globalUniforms.uTime, uHit: { value: 0 } },
+    vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP; void main(){ vP = position; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `
+      uniform vec3 uColor; uniform float uOpacity; uniform float uTime; uniform float uHit;
+      varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      float hexDist(vec2 p){ p = abs(p); return max(dot(p, normalize(vec2(1.0,1.732))), p.x); }
+      void main(){
+        vec3 n = normalize(vP);
+        vec2 uv = vec2(atan(n.z, n.x) * 3.0, n.y * 5.0);
+        vec2 r = vec2(1.0, 1.732); vec2 h = r * 0.5;
+        vec2 a = mod(uv, r) - h; vec2 b = mod(uv - h, r) - h;
+        vec2 g = dot(a,a) < dot(b,b) ? a : b;
+        float edge = smoothstep(0.42, 0.5, hexDist(g));
+        float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.5);
+        float scan = smoothstep(0.06, 0.0, abs(fract(vP.y * 0.25 - uTime * 0.6) - 0.5));
+        float a2 = (edge * 0.55 + fr * 0.9 + scan * 0.25 + uHit * 0.6) * uOpacity;
+        gl_FragColor = vec4(uColor * a2 + vec3(1.0) * edge * fr * 0.3 * uOpacity, 1.0);
+      }`,
+  });
+}
+
+// Long flowing spirit (dragon) along a tube: reveals with uHead, scales pattern
+export function spiritMaterial(color, color2) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: { uColor: { value: new THREE.Color(color) }, uColor2: { value: new THREE.Color(color2) }, uHead: { value: 0 }, uLen: { value: 0.45 }, uOpacity: { value: 1 }, uNoise: { value: noiseTex() }, uTime: globalUniforms.uTime },
+    vertexShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `
+      uniform vec3 uColor; uniform vec3 uColor2; uniform float uHead; uniform float uLen; uniform float uOpacity; uniform sampler2D uNoise; uniform float uTime;
+      varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+      void main(){
+        float d = uHead - vUv.x;
+        if (d < 0.0 || d > uLen) discard;
+        float body = smoothstep(uLen, uLen * 0.3, d) * smoothstep(0.0, 0.02, d);
+        float scales = smoothstep(0.3, 0.9, abs(sin(vUv.x * 260.0 + vUv.y * 18.0)) * texture2D(uNoise, vec2(vUv.x * 6.0 - uTime, vUv.y)).r * 1.6);
+        float fr = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 1.5);
+        vec3 col = mix(uColor, uColor2, scales) * (0.4 + fr * 1.4 + scales * 0.6);
+        col += vec3(1.0) * smoothstep(0.03, 0.0, d) * 2.0;
+        gl_FragColor = vec4(col * body * uOpacity, 1.0);
       }`,
   });
 }

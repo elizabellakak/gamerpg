@@ -9,6 +9,7 @@ export const MODEL_LIST = [
   'models/hero', 'models/npc_smith', 'models/npc_maiden',
   ...['slime', 'wolf', 'goblin', 'golem', 'dragon'].map((m) => 'models/monsters/' + m),
   ...WEAPONS.map((w) => 'models/weapons/' + w.id),
+  ...['shield_iron', 'shield_knight', 'shield_aegis'].map((s) => 'models/weapons/' + s),
   ...['tree_oak', 'tree_pine', 'tree_sakura', 'rock_a', 'rock_b', 'rock_c', 'crystal', 'pillar_ruin', 'arch_ruin',
     'lantern', 'house', 'pagoda', 'forge', 'gacha_shrine', 'portal', 'fence', 'torii', 'bridge'].map((p) => 'models/props/' + p),
 ];

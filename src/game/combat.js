@@ -9,15 +9,21 @@ export class Combat {
   }
 
   // Calculates & applies damage from player to a monster
-  playerHit(m, mult, { color = 0xffffff, knock = 0, from = null, heavy = false, noFx = false } = {}) {
+  playerHit(m, mult, { color = 0xffffff, knock = 0, from = null, heavy = false, noFx = false, stun = 0, slow = 0, ult = false } = {}) {
     if (m.dead) return 0;
     const st = this.game.stats;
+    const me = st.mastery || {};
     const crit = Math.random() * 100 < st.crit;
-    const defF = 1 - m.def / (m.def + 120);
+    const def = m.def * (1 - (me.pen || 0) / 100);
+    const defF = 1 - def / (def + 120);
+    if (ult) mult *= 1 + (me.ultPct || 0) / 100;
     let dmg = st.atk * mult * (0.9 + Math.random() * 0.2) * defF;
     if (crit) dmg *= st.cdmg / 100;
     dmg = Math.max(1, Math.round(dmg));
     m.takeDamage(dmg, { knock, from, crit, heavy });
+    if (stun && !m.tpl.boss) m.stun = Math.max(m.stun || 0, stun);
+    if (slow) m.slow = Math.max(m.slow || 0, slow);
+    if (me.lifesteal) { const pl = this.game.player; pl.hp = Math.min(st.maxHp, pl.hp + dmg * me.lifesteal / 100); }
     const p = tmp.copy(m.position); p.y += m.tpl.height * 0.75;
     const g = this.game;
     g.dmgText.spawn(p, dmg.toLocaleString(), crit ? 'crit' : (heavy ? 'heavy' : ''), { scale: crit ? 1.25 : 1 });

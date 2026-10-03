@@ -237,9 +237,13 @@ def add_r(spec, bone, r):
 
 
 class Animator:
-    def __init__(self, rig, solver):
+    def __init__(self, rig, solver, loc_bones=None, scale_bones=None):
+        """loc_bones / scale_bones: optional sets restricting which bones get location / scale
+        keys (None = all). Rotation is always keyed for every bone."""
         self.rig = rig
         self.solver = solver
+        self.loc_bones = loc_bones
+        self.scale_bones = scale_bones
 
     def _key(self, f, solved, prevq):
         for pb in self.rig.arm.pose.bones:
@@ -253,8 +257,10 @@ class Animator:
             pb.location = l
             pb.scale = s
             pb.keyframe_insert("rotation_quaternion", frame=f, group=pb.name)
-            pb.keyframe_insert("location", frame=f, group=pb.name)
-            pb.keyframe_insert("scale", frame=f, group=pb.name)
+            if self.loc_bones is None or pb.name in self.loc_bones:
+                pb.keyframe_insert("location", frame=f, group=pb.name)
+            if self.scale_bones is None or pb.name in self.scale_bones:
+                pb.keyframe_insert("scale", frame=f, group=pb.name)
 
     def sampled(self, name, frames, fn):
         """fn(frame_index, t01) -> spec. Keys every frame 0..frames inclusive."""

@@ -106,6 +106,26 @@ def add_bloom():
         return False
 
 
+def darken_logo_area(src, dst):
+    """Darken the lower-left / left third (behind the title logo) with a soft gradient."""
+    import numpy as np
+    img = bpy.data.images.load(src)
+    w, h = img.size
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+    u = np.linspace(0.0, 1.0, w)[None, :]
+    v = np.linspace(0.0, 1.0, h)[:, None]          # 0 = bottom row
+    left = np.clip((0.5 - u) / 0.5, 0, 1) ** 1.4
+    low = np.clip((0.75 - v) / 0.75, 0, 1) ** 1.2
+    f = 1.0 - (0.38 * left * (0.35 + 0.65 * low) + 0.18 * low * np.clip(1.0 - u, 0, 1) ** 2)
+    px[:, :, :3] *= f[:, :, None]
+    img.pixels[:] = px.ravel()
+    img.filepath_raw = dst
+    img.file_format = "JPEG"
+    bpy.context.scene.render.image_settings.quality = 90
+    img.save()
+    bpy.data.images.remove(img)
+
+
 def build(path=None, samples=96, w=1600, h=900):
     rig, solver, sock = C.build_hero(export=False)
     weapon_object("celestial_excalibur", parent=sock)
@@ -196,8 +216,10 @@ def build(path=None, samples=96, w=1600, h=900):
     cam.data.dof.use_dof = False
     add_bloom()
     path = path or os.path.join(OUT, "promo.jpg")
-    sc.render.image_settings.file_format = "JPEG"
+    tmp = os.path.join(os.path.dirname(path), "_promo_tmp.png")
+    sc.render.image_settings.file_format = "PNG"
     sc.render.image_settings.color_mode = "RGB"
-    sc.render.image_settings.quality = 90
-    R.render(path)
+    R.render(tmp)
+    darken_logo_area(tmp, path)
+    os.remove(tmp)
     return path

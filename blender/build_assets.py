@@ -21,9 +21,9 @@ from pipeline import characters, icons, monsters, promo, props, weapons  # noqa:
 def registry():
     reg = {}
     groups = {}
-    for wid in weapons.WEAPONS:
+    for wid in weapons.ALL_WEAPON_MODELS:
         reg[wid] = (lambda w=wid: weapons.build(w))
-    groups["weapons"] = list(weapons.WEAPONS)
+    groups["weapons"] = list(weapons.ALL_WEAPON_MODELS)
     for cid in characters.CHARACTERS:
         reg[cid] = (lambda c=cid: characters.build(c))
     groups["characters"] = list(characters.CHARACTERS)

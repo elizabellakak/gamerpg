@@ -78,6 +78,24 @@ def add_socket(rig, p):
     return sock
 
 
+def add_class_sockets(rig, p):
+    """bow_socket (left palm) and shield_socket (outer left forearm).
+    Both use the same rest orientation convention as weapon_socket (local +Z = forward from the
+    fist, local +X = up), so anim.hand_rot() aims them; see class_anims for the poses."""
+    g = grip_point(p, 1)
+    bow = empty("bow_socket", size=0.12)
+    bow.matrix_world = basis(x=(0, 0, 1), z=(0, -1, 0), loc=g)
+    rig.attach(bow, "hand_L")
+    el = V((p["elbow"][0], p["elbow"][1], p["elbow"][2]))
+    wr = V((p["wrist"][0], p["wrist"][1], p["wrist"][2]))
+    c = el.lerp(wr, 0.5) + V((0.066, 0, 0))
+    sh = empty("shield_socket", size=0.12)
+    # rest: shield face (local -Y) points outward (+X), shield top (local +Z) points forward
+    sh.matrix_world = basis(x=(0, 0, 1), z=(0, -1, 0), loc=c)
+    rig.attach(sh, "forearm_L")
+    return bow, sh
+
+
 # ---------------------------------------------------------------------------
 # shared part helpers
 # ---------------------------------------------------------------------------
@@ -314,8 +332,16 @@ def hero_poses():
     return P
 
 
+HERO_LOC_BONES = {"root", "hips"}
+
+
+def hero_animator(rig, solver):
+    # only root/hips ever translate and no hero bone scales: skip constant channels (file size)
+    return Animator(rig, solver, loc_bones=HERO_LOC_BONES, scale_bones=set())
+
+
 def hero_anims(rig, solver):
-    an = Animator(rig, solver)
+    an = hero_animator(rig, solver)
     P = hero_poses()
     R = P["ready"]
 
@@ -736,8 +762,11 @@ def build_hero(export=True, anims=True):
     rig, solver = make_rig("HeroRig", HERO_P)
     rig.attach_builders(hero_parts(HERO_P), "hero")
     sock = add_socket(rig, HERO_P)
+    add_class_sockets(rig, HERO_P)
     if anims:
         hero_anims(rig, solver)
+        from .class_anims import class_anims
+        class_anims(rig, solver)
     if export:
         return export_glb("models/hero.glb", animations=True)
     return rig, solver, sock

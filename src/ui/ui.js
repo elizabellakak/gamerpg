@@ -1,5 +1,7 @@
 import { WEAPON_BY_ID, RARITY, ELEMENT, ITEMS, weaponStats } from '../data/weapons.js';
-import { SKILLS } from '../data/skills.js';
+import { KITS } from '../data/skills.js';
+import { MASTERY_NODES, MASTERY_MAX, masteryXpToNext } from '../data/mastery.js';
+import { CLASSES } from '../data/weapons.js';
 import { ZONES } from '../data/monsters.js';
 import { QUESTS } from '../data/quests.js';
 import { GACHA } from '../data/gacha.js';
@@ -58,6 +60,7 @@ export class UI {
         <button data-open="inventory" title="กระเป๋า (B)"><span>🎒</span><em>กระเป๋า</em><i class="dot" id="dot-inv"></i></button>
         <button data-open="enhance" title="ตีบวก"><span>⚒️</span><em>ตีบวก</em></button>
         <button data-open="gacha" class="hot" title="กาชา"><span>✨</span><em>กาชา</em></button>
+        <button data-open="mastery" title="มาสเตอรี่ (K)"><span>⭐</span><em>มาสเตอรี่</em></button>
         <button data-open="quest" title="เควส"><span>📜</span><em>เควส</em><i class="dot" id="dot-quest"></i></button>
         <button data-open="warp" title="วาร์ป (M)"><span>🌀</span><em>วาร์ป</em></button>
         <button data-open="settings" title="ตั้งค่า"><span>⚙️</span><em>ตั้งค่า</em></button>
@@ -77,7 +80,7 @@ export class UI {
         </div>
         <button id="btn-auto" class="auto">AUTO<kbd>H</kbd></button>
         <div class="sk-ring">
-          ${SKILLS.map((s, i) => `<button class="sk sk${i} ${s.ult ? 'ult' : ''}" data-skill="${s.id}" title="${s.name} (${s.key})"><span class="sk-i">${s.icon}</span><div class="cd"></div><b class="cdt"></b><kbd>${s.key}</kbd><small>${s.mp}</small></button>`).join('')}
+          ${[0, 1, 2, 3].map((i) => `<button class="sk sk${i} ${i === 3 ? 'ult' : ''}" data-skill="${i}"><span class="sk-i"></span><div class="cd"></div><b class="cdt"></b><kbd>${i + 1}</kbd><small></small></button>`).join('')}
           <button class="sk dash" id="btn-dash" title="หลบ (Space)"><span class="sk-i">💨</span><div class="cd"></div><kbd>␣</kbd></button>
           <button class="atk" id="btn-atk" title="โจมตี (คลิก/J)"><span>⚔️</span></button>
         </div>
@@ -90,7 +93,7 @@ export class UI {
       <div id="skill-flash" class="hidden"></div>
     `;
     this.minimap = new Minimap($('#minimap'), this.game);
-    this.skBtns = SKILLS.map((sk) => { const b = r.querySelector(`[data-skill="${sk.id}"]`); return { sk, b, cd: b.querySelector('.cd'), cdt: b.querySelector('.cdt'), last: '' }; });
+    this.skBtns = [0, 1, 2, 3].map((i) => { const b = r.querySelector(`[data-skill="${i}"]`); return { i, b, icon: b.querySelector('.sk-i'), mp: b.querySelector('small'), cd: b.querySelector('.cd'), cdt: b.querySelector('.cdt'), last: '' }; });
     r.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => { audio.play('click'); this.openPanel(b.dataset.open); }));
     $('#btn-auto').addEventListener('click', () => this.toggleAuto());
     $('#pot-hp').addEventListener('click', () => this.game.usePotion('hp'));
@@ -131,6 +134,31 @@ export class UI {
     joy.addEventListener('pointermove', move);
     const end = (e) => { if (e.pointerId !== id) return; id = null; knob.style.transform = ''; this.game.input.joy.x = 0; this.game.input.joy.y = 0; };
     joy.addEventListener('pointerup', end); joy.addEventListener('pointercancel', end);
+  }
+
+  refreshSkills() {
+    const pl = this.game.player;
+    if (!pl || !this.skBtns) return;
+    const kit = pl.kit;
+    for (const it of this.skBtns) {
+      const s = kit.skills[it.i];
+      it.icon.textContent = s.icon;
+      it.mp.textContent = pl.mpCost(s);
+      it.b.title = `${s.name} (${s.key}) — ${s.desc}`;
+    }
+    const cls = CLASSES[pl.cls];
+    const port = document.querySelector('.portrait-in');
+    if (port) port.textContent = cls.icon;
+  }
+
+  masteryUp(cls, lv) {
+    const node = (MASTERY_NODES[cls] || []).find((n) => n.lv === lv);
+    const e = document.querySelector('#big-banner');
+    e.className = 'levelup';
+    e.innerHTML = `<small>MASTERY UP</small><b>${CLASSES[cls].icon} ${CLASSES[cls].name} Lv.${lv}</b>`;
+    void e.offsetWidth; e.classList.add('show');
+    clearTimeout(this._bb); this._bb = setTimeout(() => e.classList.add('hidden'), 2600);
+    if (node) this.toast(`🔓 ปลดล็อกพาสซีฟ: ${node.name} — ${node.desc}`, 'legend');
   }
 
   // ---------------- HUD refresh ----------------
@@ -191,14 +219,17 @@ export class UI {
     $c('#xp-fill').style.width = (this.s.xp / need) * 100 + '%';
     $c('#xp-t').textContent = `EXP ${(this.s.xp / need * 100).toFixed(1)}%`;
     // skills cooldowns
+    const kit = pl.kit;
     for (const it of this.skBtns) {
-      const s = it.sk, b = it.b;
+      const s = kit.skills[it.i], b = it.b;
       const cd = pl.cooldowns[s.id];
-      it.cd.style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,.72) ${(cd / s.cd) * 360}deg, transparent 0)` : 'transparent';
+      const maxCd = s.cd * (1 - (pl.mastery.cdr || 0) / 100);
+      it.cd.style.background = cd > 0 ? `conic-gradient(rgba(0,0,0,.72) ${(cd / maxCd) * 360}deg, transparent 0)` : 'transparent';
       const txt = cd > 0 ? String(cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '';
       if (txt !== it.last) { it.cdt.textContent = txt; it.last = txt; }
-      b.classList.toggle('nomp', pl.mp < s.mp);
-      b.classList.toggle('ready', cd <= 0 && pl.mp >= s.mp);
+      const cost = pl.mpCost(s);
+      b.classList.toggle('nomp', pl.mp < cost);
+      b.classList.toggle('ready', cd <= 0 && pl.mp >= cost);
     }
     const db = $c('#btn-dash .cd');
     db.style.background = pl.dashCd > 0 ? `conic-gradient(rgba(0,0,0,.7) ${(pl.dashCd / 0.9) * 360}deg, transparent 0)` : 'transparent';
@@ -391,7 +422,7 @@ export class UI {
       <div class="det-top r-${d.rarity}">
         <div class="det-icon ${w.plus >= 4 ? 'aura' : ''} ${w.plus >= 15 ? 'rainbow' : ''}" style="--aura:${t.intensity > 0 ? hex(t.color) : 'transparent'}">${iconImg(d.id, 'big')}</div>
         <div><div class="rar-tag" style="color:${r.color}">${d.rarity} · ${r.th}</div><h3>${d.name}${w.plus ? ` <span class="plus-t">+${w.plus}</span>` : ''}</h3><div class="muted">${d.en}</div>
-        <div class="el" style="color:${hex(el.color)}">${el.icon} ธาตุ${el.th}</div></div>
+        <div class="el" style="color:${hex(el.color)}">${el.icon} ธาตุ${el.th} · <span style="color:#e8dcc0">${CLASSES[d.cls].icon} ${CLASSES[d.cls].name}</span></div></div>
       </div>
       <div class="stats">
         <div><span>พลังโจมตี</span><b>${fmt(ws.atk)}</b></div>
@@ -580,6 +611,34 @@ export class UI {
     this.refreshAll();
   }
 
+  // ----- mastery -----
+  panel_mastery(wrap) {
+    const body = this.panelShell(wrap, '⭐ มาสเตอรี่อาวุธ', 'p-mastery');
+    const cur = this.game.player.cls;
+    let sel = this.masteryTab || cur;
+    const render = () => {
+      const m = this.s.mastery[sel] || { lv: 1, xp: 0 };
+      const kit = KITS[sel], c = CLASSES[sel];
+      const need = masteryXpToNext(m.lv);
+      const owned = this.s.weapons.filter((w) => WEAPON_BY_ID[w.id].cls === sel).sort((a, b) => RARITY[WEAPON_BY_ID[b.id].rarity].order - RARITY[WEAPON_BY_ID[a.id].rarity].order || b.plus - a.plus);
+      body.innerHTML = `
+        <div class="ms-tabs">${Object.entries(CLASSES).map(([k, v]) => `<button class="ms-tab ${k === sel ? 'on' : ''} ${k === cur ? 'cur' : ''}" data-c="${k}"><span>${v.icon}</span><b>${v.name}</b><small>Lv.${(this.s.mastery[k] || { lv: 1 }).lv}</small></button>`).join('')}</div>
+        <div class="ms-head"><div class="ms-ic">${c.icon}</div><div class="ms-info"><h3>${c.name} <small>${c.en}</small></h3><p>${c.desc}</p>
+          <div class="ms-bar"><div style="width:${m.lv >= MASTERY_MAX ? 100 : (m.xp / need) * 100}%"></div><span>มาสเตอรี่ Lv.${m.lv}/${MASTERY_MAX} ${m.lv >= MASTERY_MAX ? '(MAX)' : `· ${fmt(m.xp)}/${fmt(need)}`}</span></div>
+          <div class="muted">ดาเมจสกิล +${(m.lv - 1) * 3}% · ได้ค่ามาสเตอรี่จากการล่ามอนสเตอร์ด้วยอาวุธสายนี้</div></div>
+          ${sel !== cur ? (owned.length ? `<button class="btn gold" id="ms-eq">สวมใส่ ${WEAPON_BY_ID[owned[0].id].name}</button>` : '<span class="muted">ยังไม่มีอาวุธสายนี้</span>') : '<span class="ms-using">✔ กำลังใช้</span>'}
+        </div>
+        <h4 class="ms-h">สกิล</h4>
+        <div class="ms-skills">${kit.skills.map((s, i) => `<div class="ms-sk ${s.ult ? 'ult' : ''}"><div class="ms-ski">${s.icon}<kbd>${i + 1}</kbd></div><div><b>${s.name}</b>${s.ult ? ' <span class="ult-t">ULTIMATE</span>' : ''}<p>${s.desc}</p><small>MP ${s.mp} · คูลดาวน์ ${s.cd}s · พลัง ${Math.round(s.mult * 100)}%</small></div></div>`).join('')}</div>
+        <h4 class="ms-h">พาสซีฟ</h4>
+        <div class="ms-nodes">${MASTERY_NODES[sel].map((n) => `<div class="ms-node ${m.lv >= n.lv ? 'on' : ''}"><i>Lv.${n.lv}</i><b>${n.name}</b><p>${n.desc}</p></div>`).join('')}</div>`;
+      body.querySelectorAll('.ms-tab').forEach((b) => b.addEventListener('click', () => { sel = this.masteryTab = b.dataset.c; audio.play('click'); render(); }));
+      const eq = body.querySelector('#ms-eq');
+      if (eq) eq.addEventListener('click', () => { this.game.equip(owned[0].uid); this.masteryTab = sel; this.closePanels(true); this.openPanel('mastery'); });
+    };
+    render();
+  }
+
   // ----- quest -----
   panel_quest(wrap) {
     const body = this.panelShell(wrap, '📜 เควส', 'p-quest');
@@ -612,7 +671,8 @@ export class UI {
         <h4>🎮 การควบคุม</h4>
         <p><kbd>W A S D</kbd> เดิน · <kbd>คลิกซ้าย</kbd>/<kbd>J</kbd> โจมตี (กดต่อเนื่องเป็นคอมโบ) · <kbd>Space</kbd> หลบ</p>
         <p><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> สกิล · <kbd>Q</kbd>/<kbd>E</kbd> ยา HP/MP · <kbd>H</kbd> AUTO · <kbd>F</kbd> คุยกับ NPC</p>
-        <p><kbd>คลิกขวาลาก</kbd> หมุนกล้อง · <kbd>ล้อเมาส์</kbd> ซูม · <kbd>B</kbd> กระเป๋า · <kbd>M</kbd> วาร์ป</p>
+        <p><kbd>คลิกขวาลาก</kbd> หมุนกล้อง · <kbd>ล้อเมาส์</kbd> ซูม · <kbd>B</kbd> กระเป๋า · <kbd>M</kbd> วาร์ป · <kbd>K</kbd> มาสเตอรี่</p>
+        <p>สลับอาวุธเพื่อเปลี่ยนสายอาชีพ: 🛡️ดาบโล่ · 🪓ดาบใหญ่ · 🔱หอก · 🏹ธนู · 🔮วิสาด — แต่ละสายมีสกิลและพาสซีฟของตัวเอง</p>
       </div>
       <div class="set-btns">
         <button class="btn blue" id="s-test">🎁 โหมดทดลอง (+เพชร/หิน)</button>
@@ -623,9 +683,11 @@ export class UI {
     $('#s-boss', body).addEventListener('change', (e) => { this.game.allowAutoBoss = e.target.checked; });
     $('#s-test', body).addEventListener('click', () => {
       const s = this.s;
+      for (const k of Object.keys(s.mastery)) s.mastery[k].lv = Math.max(s.mastery[k].lv, 10);
       s.gems += 16000; s.gold += 500000; s.items.stone = (s.items.stone || 0) + 300; s.items.stone_blessed = (s.items.stone_blessed || 0) + 20; s.items.scroll_protect = (s.items.scroll_protect || 0) + 20; s.items.ticket = (s.items.ticket || 0) + 10;
       audio.play('bigSuccess');
-      this.toast('ได้รับ 💎16,000 · 🪙500,000 · หิน 300 · หินศักดิ์สิทธิ์ 20 · คัมภีร์ 20 · ตั๋ว 10', 'legend');
+      this.toast('ได้รับ 💎16,000 · 🪙500,000 · หิน 300 · หินศักดิ์สิทธิ์ 20 · คัมภีร์ 20 · ตั๋ว 10 · มาสเตอรี่ทุกสาย Lv.10', 'legend');
+      this.game.recalcStats(); this.game.player.equip(equippedWeapon(this.s)); this.refreshSkills();
       this.refreshAll(); this.game.save();
     });
     $('#s-reset', body).addEventListener('click', () => { if (confirm('ล้างข้อมูลทั้งหมดและเริ่มใหม่?')) { resetState(); window.onbeforeunload = null; this.game.save = () => {}; location.reload(); } });

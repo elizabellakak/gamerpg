@@ -156,7 +156,8 @@ def build(iid, out_dir=None, samples=SAMPLES):
     _item_mats()
     if iid in WEAPONS:
         ob, tip, base = weapon_object(iid)
-        ob.matrix_world = xform((0, 0, 0), (0, 45, 0)) @ xform((0, 0, 0), (0, 0, 18))
+        spin = 90 if iid.endswith("_bow") else 18     # bows: show the profile with the string
+        ob.matrix_world = xform((0, 0, 0), (0, 45, 0)) @ xform((0, 0, 0), (0, 0, spin))
         objs = [ob]
         zs = [v.co.z for v in ob.data.vertices]
         zmin, zmax = min(zs), max(zs)

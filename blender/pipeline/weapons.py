@@ -59,6 +59,82 @@ def grip(B, z0, z1, r, wrap="leather_dark", ring="gold", ridges=6, segs=10, ring
             B.cyl(r * 1.3, r * 1.3, 0.014, loc=(0, 0, z), m=ring, segs=segs, bevel=0.003, seg=1)
 
 
+def wrapped_grip(B, z0, z1, r, core="leather_dark", wrap="white_cloth", ring="gold", turns=5,
+                 segs=10, diamonds=None):
+    """Premium grip: core + criss-cross helical wraps + bezelled end caps (+ diamond
+    'menuki' studs between the wraps)."""
+    B.cyl(r, r, z1 - z0, loc=(0, 0, (z0 + z1) / 2), m=core, segs=segs)
+    n = int(turns * 7)
+    for sgn in (1, -1):
+        for ph in (0.0,):
+            pts = []
+            for i in range(n + 1):
+                t = i / n
+                a = sgn * t * turns * 2 * math.pi + ph
+                pts.append((math.cos(a) * r * 1.04, math.sin(a) * r * 1.04, z0 + (z1 - z0) * t))
+            B.sweep(pts, r * 0.42, m=wrap, segs=4, scale=(0.4, 1.0), angle=70)
+    for z, d in ((z0, -1), (z1, 1)):
+        B.cyl(r * 1.35, r * 1.2, 0.016, loc=(0, 0, z + d * 0.004), m=ring, segs=segs, bevel=0.003,
+              seg=1)
+        B.torus(r * 1.32, 0.0028, loc=(0, 0, z - d * 0.006), m=ring, segs=segs, rsegs=3)
+    if diamonds:
+        zm = (z0 + z1) / 2
+        for y in (-1, 1):
+            B.gem(r * 0.45, loc=(0, y * r * 1.12, zm), rot=(-y * 90, 0, 0), m=diamonds, segs=4,
+                  h_top=r * 0.2, h_bot=r * 0.3)
+
+
+def bezel_gem(B, loc, rot, r, gem_m, bezel_m="gold", prongs=4):
+    M = xform(loc, rot)
+    B.gem(r, matrix=M, m=gem_m, segs=8, h_top=r * 0.55, h_bot=r * 0.8)
+    B.torus(r * 1.12, r * 0.18, matrix=M, m=bezel_m, segs=10, rsegs=4)
+    for k in range(prongs):
+        a = 2 * math.pi * (k + 0.5) / prongs
+        B.cyl(r * 0.16, r * 0.06, r * 0.5, matrix=M @ xform((math.cos(a) * r * 1.05,
+                                                              math.sin(a) * r * 1.05, r * 0.2),
+                                                             (0, 0, 0)), m=bezel_m, segs=4,
+              smooth=False)
+
+
+def filigree(B, origin, direction, normal, size, m="gold", turns=1.6, r=0.0035, mirror=True):
+    """Spiral scroll-work curl lying in the plane (direction, normal x direction)."""
+    d = Vector(direction).normalized()
+    nrm = Vector(normal).normalized()
+    side = nrm.cross(d).normalized()
+    pts, rad = [], []
+    n = 11
+    for i in range(n + 1):
+        t = i / n
+        a = t * turns * 2 * math.pi
+        rr = size * (1 - 0.8 * t)
+        p = Vector(origin) + d * (size * 1.2 * t + math.sin(a) * rr * 0.5) + side * (
+            (1 - math.cos(a)) * rr * 0.5)
+        pts.append(p)
+        rad.append(r * (1 - 0.6 * t))
+    B.sweep(pts, rad, m=m, segs=4, mirror=mirror, angle=70)
+
+
+def blade_line(B, pts, width, thick, m):
+    """Flat strip following a polyline on the blade face (fullers, bevel lines)."""
+    B.sweep(pts, width, m=m, segs=4, scale=(thick / width, 1.0), up=(0, 1, 0), angle=80)
+
+
+def fuller(B, z0, z1, x_of_z, t_of_z, width, m_dark="steel_dark", m_line="silver", n=5):
+    """Fuller groove look on both faces: darker inset strip flanked by two bright bevel lines."""
+    for sgn in (-1, 1):
+        mid, l1, l2 = [], [], []
+        for i in range(n + 1):
+            z = z0 + (z1 - z0) * i / n
+            x = x_of_z(z)
+            y = sgn * t_of_z(z)
+            mid.append((x, y, z))
+            l1.append((x - width, y * 0.985, z))
+            l2.append((x + width, y * 0.985, z))
+        blade_line(B, mid, width * 0.85, 0.0012, m_dark)
+        blade_line(B, l1, width * 0.18, 0.0012, m_line)
+        blade_line(B, l2, width * 0.18, 0.0012, m_line)
+
+
 def straight_blade(B, z0, z1, w0, w1, t, core, edge, tip=0.12, frac=0.78):
     st = [(z0, w0, t, 0), (z0 + (z1 - z0) * 0.35, (w0 + w1) * 0.5, t * 0.95, 0),
           (z1 - tip, w1, t * 0.9, 0), (z1 - tip * 0.45, w1 * 0.62, t * 0.7, 0), (z1, 0, 0, 0)]
@@ -337,7 +413,8 @@ def storm_scythe(B):
 
 
 def dragonfang_greatsword(B):
-    grip(B, -0.26, 0.08, 0.02, "leather_dark", "black_metal", ridges=10)
+    wrapped_grip(B, -0.26, 0.08, 0.019, core="black_metal", wrap="leather", ring="black_metal",
+                 turns=7, diamonds="glow_lava")
     B.cyl(0.03, 0.0, 0.07, loc=(0, 0, -0.3), rot=(180, 0, 0), m="black_metal", segs=6)
     B.box((0.05, 0.05, 0.04), loc=(0, 0, -0.275), m="black_metal", bevel=0.008)
     B.gem(0.014, loc=(0, -0.026, -0.275), rot=(90, 0, 0), m="glow_lava", segs=6)
@@ -365,11 +442,19 @@ def dragonfang_greatsword(B):
         pts = [(0, -0.018), (L, 0.012), (0, 0.016)]
         B.poly(pts, 0.008, matrix=xform((w - 0.004, 0, z), (90, 0, 0)), m="fang", mirror=True,
                thick_fn=lambda x, y: 0.012 - x * 0.2, smooth=False)
+    fuller(B, 0.18, 1.18, lambda z: 0.0, lambda z: 0.0142, 0.014, m_dark="black_metal",
+           m_line="gold")
+    for y, rx in ((-0.036, 90), (0.036, -90)):
+        bezel_gem(B, (0.0, y, 0.11), (rx, 0, 0), 0.016, "glow_lava", bezel_m="gold")
+    for y in (-0.036, 0.036):
+        filigree(B, (0.05, y, 0.125), (1, 0, 0.5), (0, y, 0), 0.04)
     return dict(tip=(0, 0, 1.42), base=(0, 0, 0.15))
 
 
 def moonlight_katana(B):
-    grip(B, -0.27, 0.03, 0.017, "white_cloth", "moon_silver", ridges=11)
+    define("same_dark", color="#1a2230", rough=0.5)
+    wrapped_grip(B, -0.27, 0.03, 0.0165, core="same_dark", wrap="white_cloth", ring="moon_silver",
+                 turns=7, diamonds="glow_moon")
     B.sphere(0.02, loc=(0, 0, -0.283), scale=(1, 0.75, 0.6), m="moon_silver", segs=10, rings=6)
     B.torus(0.011, 0.002, loc=(0, 0, -0.3), rot=(90, 0, 0), m="glow_moon", segs=10, rsegs=4)
     B.sweep([(0, 0, -0.31), (0.01, -0.01, -0.35), (0.004, -0.018, -0.39)],
@@ -389,12 +474,20 @@ def moonlight_katana(B):
         for y in (-0.0046, 0.0046):
             B.poly(crescent_pts(0.0065, n=5), 0.0015, matrix=xform((xo, y, z), (90, 0, 90 * i)),
                    m="glow_moon", smooth=False)
+    # bo-hi groove near the spine + a polished shinogi line, following the curve
+    fuller(B, 0.1, 0.78, lambda z: -0.035 * ((z - 0.065) / 0.79) ** 2 - 0.0035,
+           lambda z: 0.0044, 0.0028, m_dark="steel_dark", m_line="silver")
+    for s_ in (-1, 1):
+        filigree(B, (0.0, s_ * 0.006, 0.042), (1, 0, 0.0), (0, s_, 0), 0.03, m="gold",
+                 mirror=True)
+    bezel_gem(B, (0.0, -0.0062, 0.058), (90, 0, 0), 0.005, "glow_moon")
     return dict(tip=(st[-1][3], 0, 0.92), base=(0, 0, 0.07))
 
 
 def thunder_god_spear(B):
     B.cyl(0.02, 0.018, 1.95, loc=(0, 0, -0.125), m="enamel_blue", segs=10, angle=60)
-    grip(B, -0.13, 0.13, 0.021, "gold", "gold", ridges=8)
+    wrapped_grip(B, -0.13, 0.13, 0.02, core="enamel_blue", wrap="gold", ring="gold", turns=5,
+                 diamonds="glow_electric", segs=8)
     for z in (-0.9, -0.6, -0.35, 0.35, 0.6):
         B.cyl(0.024, 0.024, 0.022, loc=(0, 0, z), m="gold", segs=10, bevel=0.004)
     B.lathe([(0, -1.12), (0.02, -1.05), (0.026, -1.02), (0.018, -1.0)], m="gold", segs=8)
@@ -417,11 +510,17 @@ def thunder_god_spear(B):
     B.torus(0.058, 0.003, loc=(0, 0, 0.76), m="glow_electric", segs=24, rsegs=4)
     B.torus(0.05, 0.005, loc=(0, 0, 1.05), rot=(12, 0, 0), m="gold", segs=24, rsegs=6)
     B.torus(0.045, 0.0025, loc=(0, 0, 1.05), rot=(12, 0, 0), m="glow_violet", segs=24, rsegs=4)
+    fuller(B, 0.97, 1.16, lambda z: 0.0, lambda z: 0.0105 - 0.03 * (z - 0.97), 0.006,
+           m_dark="enamel_blue", m_line="gold_pale", n=4)
+    for s_ in (-1, 1):
+        filigree(B, (s_ * 0.03, -0.034, 0.83), (s_ * 1, 0, 0.7), (0, -1, 0), 0.03, mirror=False)
+        filigree(B, (s_ * 0.03, 0.034, 0.83), (s_ * 1, 0, 0.7), (0, 1, 0), 0.03, mirror=False)
     return dict(tip=(0, 0, 1.24), base=(0, 0, 0.9))
 
 
 def celestial_excalibur(B):
-    grip(B, -0.13, 0.07, 0.017, "white_cloth", "gold", ridges=7)
+    wrapped_grip(B, -0.13, 0.07, 0.016, core="white_cloth", wrap="gold", ring="gold", turns=4,
+                 diamonds="glow_holy")
     B.sphere(0.026, loc=(0, 0, -0.16), m="gold", segs=12, rings=8)
     B.gem(0.016, loc=(0, -0.022, -0.16), rot=(90, 0, 0), m="glow_holy_white", segs=8)
     B.gem(0.016, loc=(0, 0.022, -0.16), rot=(-90, 0, 0), m="glow_holy_white", segs=8)
@@ -445,6 +544,16 @@ def celestial_excalibur(B):
         a = math.radians(45 + 90 * k)
         B.gem(0.009, loc=(math.cos(a) * 0.085, math.sin(a) * 0.085, 0.25), m="glow_holy_white",
               segs=4, h_top=0.012, h_bot=0.012)
+    # premium details: fuller with bevel lines, ricasso gems, guard scroll-work
+    fuller(B, 0.16, 0.86, lambda z: 0.0, lambda z: 0.0068 - 0.0006 * (z - 0.16), 0.0065,
+           m_dark="gold_pale", m_line="gold")
+    for y, rx in ((-0.0078, 90), (0.0078, -90)):
+        bezel_gem(B, (0, y, 0.135), (rx, 0, 0), 0.009, "glow_holy_white")
+    for y in (-0.026, 0.026):
+        filigree(B, (0.035, y, 0.115), (1, 0, 0.35), (0, y, 0), 0.03)
+        filigree(B, (0.03, y, 0.07), (1, 0, -0.4), (0, y, 0), 0.025)
+    B.lathe([(0.0, 0.123), (0.04, 0.123), (0.045, 0.128), (0.03, 0.135), (0.0, 0.136)],
+            m="gold", segs=12, scale=(1.0, 0.35))
     return dict(tip=(0, 0, 1.22), base=(0, 0, 0.13))
 
 
@@ -460,7 +569,8 @@ def abyss_reaper(B):
         a = u * math.pi * 2 * 5
         sp.append((0.024 * math.cos(a), 0.024 * math.sin(a), z))
     B.sweep(sp, 0.0035, m="glow_abyss", segs=4, angle=70)
-    grip(B, -0.12, 0.12, 0.024, "leather_dark", "bone", ridges=6)
+    wrapped_grip(B, -0.12, 0.12, 0.023, core="obsidian", wrap="leather_dark", ring="bone",
+                 turns=5, diamonds="glow_abyss")
     for z in (-0.6, -0.3, 0.35, 0.65):
         B.torus(0.028, 0.008, loc=(0, 0, z), m="bone", segs=10, rsegs=5)
         for k in range(3):
@@ -510,11 +620,20 @@ def abyss_reaper(B):
     B.blade(st2, m="obsidian", edge_m="glow_abyss", spine_frac=0.5,
             matrix=basis(x=(0, 0, 1), z=(1, 0, 0.25), loc=(0.04, 0, 1.03)))
     tip = Mb @ Vector((st[-1][3], 0, 0.85))
+    bezel_gem(B, (0, -0.058, 1.07), (90, 0, 0), 0.012, "glow_abyss_violet", bezel_m="black_metal")
+    for z in (-0.6, -0.3, 0.35, 0.65):
+        bezel_gem(B, (0, -0.034, z), (90, 0, 0), 0.007, "glow_abyss", bezel_m="bone", prongs=3)
+    # blade fuller: dark groove + crimson bevel lines following the curve (in blade space)
+    tb2 = Builder()
+    fuller(tb2, 0.05, 0.62, lambda z: 0.3 * (z / 0.782) ** 2 - 0.012, lambda z: 0.0095, 0.008,
+           m_dark="black_metal", m_line="glow_abyss")
+    B.merge(tb2, Mb)
     return dict(tip=tip, base=Mb @ Vector((0.02, 0, 0.03)))
 
 
 def phoenix_wing(B):
-    grip(B, -0.12, 0.07, 0.017, "crimson_cloth", "gold", ridges=7)
+    wrapped_grip(B, -0.12, 0.07, 0.016, core="crimson_cloth", wrap="gold", ring="gold", turns=4,
+                 diamonds="glow_phoenix_3")
     B.lathe([(0, -0.22), (0.012, -0.19), (0.026, -0.16), (0.024, -0.14), (0.015, -0.125)],
             m="gold", segs=10)
     B.gem(0.012, loc=(0, -0.022, -0.155), rot=(90, 0, 0), m="glow_phoenix_3", segs=6)
@@ -545,6 +664,11 @@ def phoenix_wing(B):
                mirror=True, smooth=False, thick_fn=lambda x, y, L=L: 0.008 * (1 - 0.75 * x / L))
     B.cyl(0.005, 0.0015, 1.08, loc=(0, -0.0075, 0.66), m="glow_holy", segs=5)
     B.cyl(0.005, 0.0015, 1.08, loc=(0, 0.0075, 0.66), m="glow_holy", segs=5)
+    for y in (-0.023, 0.023):
+        filigree(B, (0.03, y, 0.11), (1, 0, 0.5), (0, y, 0), 0.028)
+        filigree(B, (0.028, y, 0.07), (1, 0, -0.5), (0, y, 0), 0.024)
+    for y, rx in ((-0.0085, 90), (0.0085, -90)):
+        bezel_gem(B, (0, y, 0.15), (rx, 0, 0), 0.009, "glow_phoenix_4")
     return dict(tip=(0, 0, 1.22), base=(0, 0, 0.12))
 
 
@@ -567,18 +691,26 @@ WEAPONS = {
 }
 
 
+from .weapons2 import NEW_WEAPONS, SHIELDS, _mats as _mats2  # noqa: E402
+
+WEAPONS.update(NEW_WEAPONS)
+ALL_WEAPON_MODELS = dict(WEAPONS, **SHIELDS)   # shields: models only (no icons)
+
+
 def weapon_object(wid, parent=None):
-    """Build weapon `wid` into the current scene. Returns (mesh_obj, tip_empty, base_empty)."""
+    """Build weapon/shield `wid` into the current scene. Returns (mesh_obj, tip, base);
+    extra empties (e.g. a bow's `string_mid`) are created too."""
     _mats()
+    _mats2()
     B = Builder()
-    info = WEAPONS[wid](B)
+    info = ALL_WEAPON_MODELS[wid](B)
     ob = B.to_object(wid)
     tip = empty("tip", tuple(info["tip"]), size=0.05)
     base = empty("base", tuple(info["base"]), size=0.05)
+    extras = [empty(k, tuple(v), size=0.05) for k, v in info.get("extra", {}).items()]
     if parent is not None:
-        ob.parent = parent
-        tip.parent = parent
-        base.parent = parent
+        for o in [ob, tip, base] + extras:
+            o.parent = parent
     return ob, tip, base
 
 
