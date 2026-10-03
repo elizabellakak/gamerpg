@@ -116,6 +116,20 @@ class Solver:
         rest_pole = Vector((0, 1, 0))
         absolute[upper] = frame_map(self.tail[upper] - self.head[upper], rest_pole, E - S, v)
         absolute[fore] = frame_map(self.tail[fore] - self.head[fore], rest_pole, T - E, v)
+        face = ik.get("face")
+        if face is not None:
+            # twist the forearm about its axis so its outer side (rest: dir x pole) faces `face`
+            d = (T - E).normalized()
+            cur = absolute[fore] @ (self.tail[fore] - self.head[fore]).normalized().cross(
+                rest_pole)
+            want = Wr @ Vector(face)
+            want = want - d * want.dot(d)
+            cur = cur - d * cur.dot(d)
+            if want.length > 1e-6 and cur.length > 1e-6:
+                ang = cur.normalized().angle(want.normalized())
+                if cur.cross(want).dot(d) < 0:
+                    ang = -ang
+                absolute[fore] = Matrix.Rotation(ang, 3, d) @ absolute[fore]
         if Rh is not None:
             absolute[hand] = Rh
         else:
@@ -175,6 +189,8 @@ def lerp_spec(A, B, t):
                     out[k] = {"follow": a["follow"] + (b["follow"] - a["follow"]) * t}
                 continue
             o = {"grip": _lerp(a["grip"], b["grip"], t),
+                 **({"face": _lerp(a["face"], b["face"], t)} if "face" in a and "face" in b
+                    else {}),
                  "pole": _lerp(a.get("pole", (0, 0.5, -0.5)), b.get("pole", (0, 0.5, -0.5)), t)}
             ra, rb = a.get("rot"), b.get("rot")
             if ra is not None and rb is not None:

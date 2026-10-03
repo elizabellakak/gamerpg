@@ -76,7 +76,7 @@ export class Game {
     this.recalcStats();
     this.player.equip(w);
     this.ui.refreshSkills();
-    this.fx.pillar(this.player.position, { color: this.player.elColor, color2: this.player.elColor2, radius: 0.9, height: 7, duration: 0.8 });
+    this.fx.pillar(this.player.position, { color: this.player.elColor, color2: this.player.elColor2, radius: 0.7, height: 6, duration: 0.6 });
     this.fx.shockwave(this.player.position, { color: this.player.elColor, radius: 3, duration: 0.5 });
     audio.play('success');
     this.save();

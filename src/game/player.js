@@ -35,6 +35,13 @@ export class Player {
     this.cls = 'sword';
     this.lift = 0;
     this.barrier = 0;
+    this.handR = scene.getObjectByName('hand_R');
+    // dynamic bowstring drawn while aiming (the modelled string is static)
+    const sg = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3));
+    this.bowString = new THREE.Line(sg, new THREE.LineBasicMaterial({ color: 0xfff4d0, transparent: true, opacity: 0.9 }));
+    this.bowString.frustumCulled = false;
+    this.bowString.visible = false;
+    game.world.scene.add(this.bowString);
     this.yaw = 0;
     this.targetYaw = 0;
     this.vel = new THREE.Vector3();
@@ -224,6 +231,18 @@ export class Player {
     const tip = this.tipWorld(tmpV), base = this.baseWorld(tmpV2);
     this.trail.update(dt, base, tip);
     this.aura.update(dt, base, tip);
+    this.updateBowString(tip, base);
+  }
+
+  updateBowString(tip, base) {
+    const cur = this.current && this.current.getClip().name;
+    const drawing = this.cls === 'bow' && this.handR && (cur === 'BW_Aim' || cur === 'BW_Up' || (cur === 'BW_Shoot' && this.current.time < this.current.getClip().duration * 0.6));
+    this.bowString.visible = !!drawing;
+    if (!drawing) return;
+    const hand = this.handR.getWorldPosition(new THREE.Vector3());
+    const a = this.bowString.geometry.attributes.position;
+    a.setXYZ(0, tip.x, tip.y, tip.z); a.setXYZ(1, hand.x, hand.y, hand.z); a.setXYZ(2, base.x, base.y, base.z);
+    a.needsUpdate = true;
   }
 
   toMove() { this.state = 'move'; this.stateT = 0; this.trail.active = false; this.skillMove = 0; this.skillLock = false; this.lift = 0; }

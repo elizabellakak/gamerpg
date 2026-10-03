@@ -75,7 +75,13 @@ def follow(d, pole=(0.6, 0.3, -0.6)):
 # Sword & Shield
 # ===========================================================================
 def sword_shield(an):
-    guard_L = ik((0.02, -0.34, 1.2), pole=(0.15, 0.1, -1.0))
+    SHP = (0.8, -0.4, -0.5)     # elbow out-forward-down: forearm crosses the chest
+
+    def shield(grip):
+        d = ik(grip, pole=SHP)
+        d["face"] = (0, -1, 0)   # twist forearm so the shield faces forward, upright
+        return d
+    guard_L = shield((-0.05, -0.26, 1.26))
     idle = merge(legs(14, 6, back=4), cape(), {
         "spine": {"r": (5, 0, 4)}, "chest": {"r": (2, 0, 6)}, "head": {"r": (-4, 0, -8)},
         "ikR": ik((-0.3, -0.18, 1.05), (0.1, -0.55, 0.83), pole=(-0.5, 0.5, -0.7)),
@@ -85,25 +91,25 @@ def sword_shield(an):
     def run(ph):
         a = TAU * ph
         s = run_lower(ph, lean=12)
-        s["ikL"] = ik((0.04, -0.3, 1.18 + 0.02 * math.cos(2 * a)), pole=(0.15, 0.1, -1.0))
+        s["ikL"] = shield((-0.03, -0.24, 1.22 + 0.02 * math.cos(2 * a)))
         s["ikR"] = ik((-0.3, -0.05 + 0.08 * math.sin(a), 1.0 + 0.02 * math.cos(2 * a)),
                       (-0.2, -0.45, 0.87), pole=(-0.6, 0.4, -0.6))
         return s
     an.loop("SS_Run", 21, run)
     wind = merge(idle, {"spine": {"r": (2, 0, 14)}, "chest": {"r": (0, 0, 18)},
-                        "ikL": ik((0.14, -0.14, 1.2), pole=(0.15, 0.1, -1.0))})
+                        "ikL": shield((0.02, -0.16, 1.24))})
     bash = merge(legs(24, 7, back=12), cape(-6, -4), {
         "hips": {"l": (0, 0, -0.08)}, "spine": {"r": (16, 0, -10)}, "chest": {"r": (6, 0, -16)},
         "head": {"r": (-14, 0, 14)},
         "ikR": ik((-0.32, 0.02, 1.05), (-0.2, -0.3, 0.93), pole=(-0.5, 0.5, -0.7)),
-        "ikL": ik((-0.02, -0.62, 1.24), pole=(0.15, 0.1, -1.0))})
+        "ikL": shield((-0.04, -0.5, 1.28))})
     an.keyposes("SS_Bash", [(0, idle), (5, wind), (8, bash), (10, bash), (15, idle)],
                 ["smooth", "in3", "linear", "smooth"])
     brace = merge(legs(32, 8, back=10), cape(-4, -2), {
         "hips": {"l": (0, 0, -0.12)}, "spine": {"r": (18, 0, 2)}, "chest": {"r": (6, 0, 4)},
         "head": {"r": (-6, 0, -4)},
         "ikR": ik((-0.3, 0.06, 1.0), (-0.1, -0.4, 0.9), pole=(-0.5, 0.5, -0.7)),
-        "ikL": ik((0.0, -0.36, 1.3), pole=(0.15, 0.05, -1.0))})
+        "ikL": shield((-0.06, -0.3, 1.34))})
     brace2 = merge(brace, {"hips": {"l": (0, 0, -0.13)}, "spine": {"r": (19, 0, 2)}})
     an.keyposes("SS_Block", [(0, idle), (4, brace), (13, brace2), (18, idle)],
                 ["out", "smooth", "smooth"])
