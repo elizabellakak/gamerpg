@@ -19,8 +19,11 @@ export const MASTERY_DEFS = {
 export const CLS_MASTERY = { sword: 'bicheon', spear: 'heuksal', bow: 'pacheon', greatsword: 'warrior', staff: 'wizard' };
 
 // Mastery rules (EU-style cap seen in the clips: "Mastery level total 246/250" at character Lv 125)
+// Chinese masteries (Bicheon/Heuksal/Pacheon) and European ones (Warrior/Wizard) have separate pools, as in the
+// clips: "Mastery level total 246/400" on the Chinese window and "246/250" on the EU window at Lv 124-125.
 export const MASTERY_TOTAL_PER_LEVEL = 2;
-export function masteryCap(charLevel) { return charLevel * MASTERY_TOTAL_PER_LEVEL; }
+export const FAMILY = { bicheon: 'ch', heuksal: 'ch', pacheon: 'ch', warrior: 'eu', wizard: 'eu' };
+export function masteryCap(charLevel, family = 'eu') { return family === 'ch' ? Math.round(charLevel * 3.2) : charLevel * MASTERY_TOTAL_PER_LEVEL; }
 export function masteryLevelCost(lv) { return Math.round(18 * Math.pow(lv, 1.75) + 20); } // SP to go lv -> lv+1
 
 // Rows per mastery. Each row: { icon (row category icon), kind, fx (effect handler id), tiers: [{ name, req, max, dmg, mp, cd, hits, desc }] }
@@ -80,5 +83,6 @@ export const HOTBAR_PRESETS = {
     ['hk_celestial_cloud', 'hk_death_bringer', 'hk_soul_destruction', 'hk_ghost_emperor', 'hk_chain_dragon', 'hk_fd_flash', 'hk_heuksal_storm', 'hk_windless', 'hp', 'mp']],
   wizard: [['wz_fire_bolt', 'wz_lightning_bolt', 'wz_ice_bolt', 'wz_earth_shock', 'wz_charged_wind', 'wz_snow_wind', 'wz_meteor', 'wz_teleport', 'hp', 'mp'],
     ['wz_strengthen_rocket', 'wz_thunder', 'wz_ice_roar', 'wz_earth_earthquake', 'wz_hellforge', 'wz_meteor_shower', 'wz_land_contract', 'wz_life_turnover', 'hp', 'mp']],
-  pacheon: [[], []],
+  pacheon: [['pc_adb_moonlight', 'pc_sb_destruction', 'pc_combo7', 'pc_aw_dragon', 'pc_celestial_arrow', 'pc_combo6', 'pc_pitch_black_arrow', 'pc_hawk_fire', 'hp', 'mp'],
+    ['pc_adb_demolition', 'pc_adb_annihilate', 'pc_aw_devil', 'pc_mb_lighting', 'pc_mb_swift', 'pc_soul_icehawk', 'pc_sb_will', 'pc_combo5', 'hp', 'mp']],
 };

@@ -15,6 +15,8 @@ export function applyBuffMods(s, mods) {
   if (mods.skillPct) me.skillPct = (me.skillPct || 0) + mods.skillPct;
   if (mods.absorb) me.absorb = (me.absorb || 0) + mods.absorb;
   if (mods.block) me.block = (me.block || 0) + mods.block;
+  if (mods.range) me.range = (me.range || 0) + mods.range;
+  if (mods.crit) s.crit += mods.crit;
   if (mods.atkPct) s.atk = Math.round(s.atk * (1 + mods.atkPct / 100));
   if (mods.defPct) s.def = Math.round(s.def * (1 + mods.defPct / 100));
   if (mods.hpPct) s.maxHp = Math.max(1, Math.round(s.maxHp * (1 + mods.hpPct / 100)));

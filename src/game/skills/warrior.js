@@ -32,7 +32,7 @@ function shieldFlare(p, color = 0xff7ad0) {
 }
 function bigBurst(p, d, scale = 1.6, color = 0xa8e8ff) {
   const at = aim(p, d);
-  p.fx.spikeBurst(at, col(color), 3.4 * scale, 0.3);
+  p.fx.spikeBurst(at, col(color), 2.2 * scale, 0.28);
   p.fx.streaks(at, 26, { speed: 12 * scale, color: W, color1: col(0xffb060), life: 0.4, size: 0.12, gravity: 4 });
   p.game.engine.shake(0.3 * scale);
 }
@@ -60,10 +60,10 @@ function shout(p, color, color2) {
   const fx = p.fx, at = ground(p, p.position);
   fx.spikeBurst(p.position.clone().setY(p.position.y + 2.3), col(color2), 1.4, 0.3);
   later(p, 0.4, () => {
-    fx.shockwave(at, { color, radius: 2.6 * CH, duration: 0.7, width: 0.22, start: 0.5 });
-    later(p, 0.12, () => fx.shockwave(at, { color, radius: 2.0 * CH, duration: 0.6, width: 0.14, start: 0.4 }));
-    later(p, 0.24, () => fx.shockwave(at, { color: color2, radius: 1.5 * CH, duration: 0.5, width: 0.1, start: 0.4 }));
-    fx.pillar(at, { color, color2, radius: 0.5, height: 2.4, duration: 0.6, speed: 2 });
+    fx.shockwave(at, { color, radius: 2.6 * CH, duration: 0.7, width: 0.09, start: 0.5 });
+    later(p, 0.12, () => fx.shockwave(at, { color, radius: 2.0 * CH, duration: 0.6, width: 0.07, start: 0.4 }));
+    later(p, 0.24, () => fx.shockwave(at, { color: color2, radius: 1.5 * CH, duration: 0.5, width: 0.05, start: 0.4 }));
+    fx.pillar(at, { color, color2, radius: 0.45, height: 2.2, duration: 0.5, speed: 2 });
     // taunt: every monster around turns on the warrior
     p.game.combat.inCircle(at, 30, (m) => { m.aggro = true; if (m.state === 'idle' || m.state === 'wander') m.state = 'chase'; });
     p.game.audio.play('roar', { pitch: 1.3 });

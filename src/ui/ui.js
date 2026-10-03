@@ -709,10 +709,10 @@ export class UI {
     $('#s-boss', body).addEventListener('change', (e) => { this.game.allowAutoBoss = e.target.checked; });
     $('#s-test', body).addEventListener('click', () => {
       const s = this.s;
-      s.level = Math.max(s.level, 125); s.sp += 20000000;
+      s.level = Math.max(s.level, 125); s.sp += 100000000;
       s.gems += 16000; s.gold += 500000; s.items.stone = (s.items.stone || 0) + 300; s.items.stone_blessed = (s.items.stone_blessed || 0) + 20; s.items.scroll_protect = (s.items.scroll_protect || 0) + 20; s.items.ticket = (s.items.ticket || 0) + 10;
       audio.play('bigSuccess');
-      this.toast('ได้รับ 💎16,000 · 🪙500,000 · หิน 300 · หินศักดิ์สิทธิ์ 20 · คัมภีร์ 20 · ตั๋ว 10 · เลเวล 125 · Skill point 20,000,000', 'legend');
+      this.toast('ได้รับ 💎16,000 · 🪙500,000 · หิน 300 · หินศักดิ์สิทธิ์ 20 · คัมภีร์ 20 · ตั๋ว 10 · เลเวล 125 · Skill point 100,000,000', 'legend');
       this.game.recalcStats(); this.game.player.equip(equippedWeapon(this.s)); this.refreshSkills();
       this.refreshAll(); this.game.save();
     });

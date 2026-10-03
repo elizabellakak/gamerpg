@@ -17,8 +17,9 @@ import wizardSkills from './skills/wizard.js';
 import heuksalSkills from './skills/heuksal.js';
 import warriorSkills from './skills/warrior.js';
 import bicheonSkills from './skills/bicheon.js';
+import pacheonSkills from './skills/pacheon.js';
 
-export const HANDLERS = { ...swordSkills, ...greatswordSkills, ...spearSkills, ...bowSkills, ...staffSkills, ...wizardSkills, ...heuksalSkills, ...warriorSkills, ...bicheonSkills };
+export const HANDLERS = { ...swordSkills, ...greatswordSkills, ...spearSkills, ...bowSkills, ...staffSkills, ...wizardSkills, ...heuksalSkills, ...warriorSkills, ...bicheonSkills, ...pacheonSkills };
 
 const tmpV = new THREE.Vector3();
 const tmpV2 = new THREE.Vector3();
@@ -325,6 +326,7 @@ export class Player {
   // ---------- basic attacks ----------
   startAttack(i) {
     const g = this.game;
+    this.lastAttackT = g.time;
     this.breakInvis();
     const atks = this.kit.attacks;
     this.state = 'attack'; this.stateT = 0;
@@ -332,7 +334,7 @@ export class Player {
     this.atk = atks[this.combo];
     this.atkDur = this.atk.dur / (g.stats.spd || 1);
     this.hitDone = false; this.slashDone = false;
-    this.faceNearest(this.kit.ranged ? this.atk.range : 7);
+    this.faceNearest(this.kit.ranged ? this.atk.range + (this.mastery.range || 0) : 7);
     this.yaw = this.targetYaw;
     this.anim([this.atk.anim, this.atk.fb || 'Attack1'], { once: true, dur: this.atkDur, fade: 0.06 });
     this.trail.active = !this.kit.ranged;
@@ -396,13 +398,13 @@ export class Player {
   hit_arrow(a) {
     const g = this.game;
     const from = this.position.clone(); from.y += 1.35; from.add(this.forward().multiplyScalar(0.6));
-    const { dir, target } = aimDir(this, from, a.range);
+    const { dir, target } = aimDir(this, from, a.range + (this.mastery.range || 0));
     let n = a.count || 1;
     if (Math.random() * 100 < (this.mastery.multishot || 0)) n++;
     for (let i = 0; i < n; i++) {
       const ang = (i - (n - 1) / 2) * 0.12;
       const d = new THREE.Vector3(dir.x * Math.cos(ang) - dir.z * Math.sin(ang), dir.y, dir.z * Math.cos(ang) + dir.x * Math.sin(ang));
-      projectile(this, { from: from.clone(), dir: d, speed: 50, range: a.range + 4, radius: 0.7, mult: a.mult, kind: 'arrow', size: a.heavy ? 1.3 : 1, homing: i === 0 && n === 1 ? target : null, heavy: a.heavy });
+      projectile(this, { from: from.clone(), dir: d, speed: 50, range: a.range + 4 + (this.mastery.range || 0), radius: 0.7, mult: a.mult, kind: 'arrow', size: a.heavy ? 1.3 : 1, homing: i === 0 && n === 1 ? target : null, heavy: a.heavy });
     }
     g.audio.play('swing', { pitch: 1.5 });
   }
@@ -550,7 +552,7 @@ export class Player {
     const dx = t.position.x - this.position.x, dz = t.position.z - this.position.z;
     const d = Math.hypot(dx, dz) - t.tpl.radius;
     const res = { dirX: 0, dirZ: 0, attack: false, skill: null };
-    const engage = this.kit.ranged ? 16 : 2.4 + this.reach * 0.5;
+    const engage = this.kit.ranged ? 16 + (this.mastery.range || 0) : 2.4 + this.reach * 0.5;
     if (d > engage) { res.dirX = dx; res.dirZ = dz; }
     else {
       res.attack = true;
@@ -586,6 +588,7 @@ export class Player {
     const cost = this.mpCost(s);
     if (this.mp < cost) { g.ui.toast('MP ไม่พอ!', 'warn'); return; }
     this.mp -= cost;
+    this.lastAttackT = g.time;
     this.cooldowns[s.id] = s.cd * (1 - (this.mastery.cdr || 0) / 100);
     if (s.cdGroup) for (const o of Object.values(SKILL_INDEX)) if (o.cdGroup === s.cdGroup) this.cooldowns[o.id] = this.cooldowns[s.id];
     this.state = 'skill'; this.stateT = 0;

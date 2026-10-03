@@ -1,6 +1,6 @@
 // Silkroad-style skill window (tabs, mastery header with LEVEL UP, rows of skill icons with level + ADD/MAX)
 // and the bottom hotbar (10 slots x 4 pages, F1-F4) with drag & drop placement.
-import { TABS, MASTERY_DEFS, ROWS, SKILL_INDEX, masteryCap, skillReqMastery, skillCost, skillMult, skillMp, HOTBAR_PRESETS } from '../data/skilltree.js';
+import { TABS, MASTERY_DEFS, ROWS, SKILL_INDEX, FAMILY, masteryCap, skillReqMastery, skillCost, skillMult, skillMp, HOTBAR_PRESETS } from '../data/skilltree.js';
 import '../data/skills_masteries.js';
 import { masteryTotal, masteryUpInfo, levelUpMastery, skillUpInfo, levelUpSkill, HOTBAR_SLOTS, prevNeed, skillRuntime } from '../systems/skills.js';
 import { skillIcon } from './skillicons.js';
@@ -79,7 +79,7 @@ export class SkillWindow {
           }).join('')}
         </div>`).join('')}
       </div>
-      <div class="sw-foot"><span>Skill point <b>${fmt(s.sp)}</b></span><span>Mastery level total <b>${masteryTotal(s)}/${masteryCap(s.level)}</b></span></div>
+      <div class="sw-foot"><span>Skill point <b>${fmt(s.sp)}</b></span><span>Mastery level total <b>${masteryTotal(s, FAMILY[m])}/${masteryCap(s.level, FAMILY[m])}</b></span></div>
       <div class="sw-hint">ลากไอคอนสกิลไปวางที่แถบสกิลด้านล่าง · คลิกขวาที่ช่องเพื่อเอาออก · F1–F4 เปลี่ยนหน้า</div>`;
     this.el.querySelector('.sw-x').onclick = () => this.close();
     this.el.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { this.tab = b.dataset.tab; this.sub = TABS.find((t) => t.id === this.tab).subs[0]; audio.play('click'); this.render(); });

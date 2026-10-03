@@ -28,30 +28,35 @@ python3 blender/build_assets.py hero dragon   # สร้างเฉพาะ�
 | ปุ่ม | การกระทำ |
 |---|---|
 | `W A S D` | เดิน |
-| คลิกซ้าย / `J` (กดค้าง) | โจมตีคอมโบ 3 จังหวะ |
-| `1` `2` `3` `4` | สกิล (4 = ท่าไม้ตาย) |
-| `Space` | หลบ (อมตะชั่วขณะ + เงาภาพติดตา) |
+| คลิกซ้าย / `J` (กดค้าง) | โจมตีปกติ |
+| `1` … `9` `0` | ช่องสกิลบนแถบสกิล (10 ช่อง) |
+| `F1` – `F4` | เปลี่ยนหน้าแถบสกิล |
+| `K` | หน้าต่างสกิล (คลิกไอคอน = ใช้สกิล, ลาก = วางบนแถบ, คลิกขวาที่ช่อง = เอาออก) |
+| `Space` | หลบ |
 | `Q` / `E` | ยา HP / MP |
 | `H` | โหมด AUTO ต่อสู้อัตโนมัติ |
 | `F` | คุยกับ NPC / ใช้ประตูวาร์ป |
 | คลิกขวาลาก / ล้อเมาส์ | หมุนกล้อง / ซูม |
 | `B` / `M` | กระเป๋า / วาร์ป |
 
-มือถือ: จอยสติ๊กเสมือนด้านซ้าย ปุ่มสกิลด้านขวา ลากจอเพื่อหมุนกล้อง
+มือถือ: จอยสติ๊กเสมือนด้านซ้าย แตะช่องบนแถบสกิลด้านล่าง ลากจอเพื่อหมุนกล้อง
 
-## ⭐ มาสเตอรี่ 5 สายอาวุธ (สลับอาวุธ = สลับสายอาชีพ)
+## ⭐ ระบบสกิลแบบ Silkroad Online (ตามคลิปอ้างอิง)
 
-| สาย | สกิล 1 | สกิล 2 | สกิล 3 | ท่าไม้ตาย (4) | หลบ |
-|---|---|---|---|---|---|
-| 🛡️ ดาบโล่ | โล่พิฆาตสะท้านฟ้า (พุ่งชน + มึนงง) | กางเขนศักดิ์สิทธิ์ (ฟัน 3 ครั้ง + กางเขนแสง) | ปราการแสงนิรันดร์ (โดมโล่หกเหลี่ยมดูดซับดาเมจ) | พิพากษาสวรรค์ (ดาบยักษ์ตกจากฟ้า) | พุ่ง |
-| 🪓 ดาบใหญ่/ขวาน | คลื่นปฐพีแยก (หินแหลมปะทุเป็นแนว) | พายุหมุนเลือดคลั่ง (หมุน + ดูดศัตรู) | กระโจนทลายภูผา (กระโดดทุบหลุมระเบิด) | ฟันทลายสวรรค์ (ดาบวิญญาณยักษ์ผ่าแผ่นดินเป็นเหวลาวา) | พุ่ง |
-| 🔱 หอก/ง้าว | แทงทะลวงมังกร (สว่านเกลียวพุ่งทะลุแนว) | วงล้อง้าวพายุ (วงใบมีด + ดึงศัตรู) | พันหอกสะท้านฟ้า (แทงรัว + หอกวิญญาณ) | มังกรเหินฟ้าพิฆาต (มังกรคู่พันเกลียวขึ้นฟ้าแล้วดิ่ง) | พุ่ง |
-| 🏹 ธนู | ศรเกลียววายุ (ศรทะลวง 30 ม.) | ศรห่าฝนพันดอก | ศรระเบิดแยกร่าง (5 ดอก) | ศรเทพพิฆาตดารา (ลำแสงศรยักษ์ 46 ม.) | ตีลังกาถอยหลัง |
-| 🔮 วิสาด | มหาอัคคีพิโรธ (ลูกบอลธาตุระเบิด) | โซ่น้ำแข็งนิรันดร์ (แท่งน้ำแข็งเป็นแนว + ช้า) | อสนีบาตพิโรธ | อุกกาบาตวันสิ้นโลก | วาร์ปเทเลพอร์ต |
+- **มาสเตอรี่** อัปด้วยปุ่ม LEVEL UP ใช้ Skill point (SP) ที่ได้จากการล่ามอนสเตอร์ · มาสเตอรี่แต่ละสายสูงสุดเท่าเลเวลตัวละคร · มาสเตอรี่สายจีน (Bicheon/Heuksal/Pacheon) รวมได้ไม่เกิน 3.2 เท่าของเลเวล (Lv125 = 400) และสายยุโรป (Warrior/Wizard) ไม่เกิน 2 เท่า (Lv125 = 250) · เลเวลตัวละครสูงสุด 130
+- **หน้าต่างสกิล** แท็บ Weapon (Bicheon · Heuksal · Pacheon) / Melee (Warrior) / Caster (Wizard) · แต่ละแถวคือสายสกิล ซ้ายไปขวาคือขั้นที่สูงขึ้น · ปุ่ม ADD = เรียน/อัปได้, MAX = เต็มแล้ว · ทุกเลเวลต้องใช้มาสเตอรี่ +1 และ SP ตามตาราง · ขั้นถัดไปต้องอัปขั้นก่อนหน้าก่อน
+- **แถบสกิล** 10 ช่อง × 4 หน้า (F1–F4) · คูลดาวน์แสดงเป็นเลขนับถอยหลังบนพื้นน้ำเงินเข้ม กะพริบฟ้าเมื่อพร้อม · สกิลกลุ่มเดียวกันใช้คูลดาวน์ร่วม · ปุ่ม "จัดแถบ" วางสกิลตามแถบในคลิป
+- **บัฟ** แสดงไอคอนข้างหลอด HP/MP พร้อม tooltip เวลาที่เหลือ
 
-- มาสเตอรี่ Lv.1–20 ต่อสาย ได้ค่าจากการล่ามอนสเตอร์ด้วยอาวุธสายนั้น · ดาเมจสกิล +3%/เลเวล
-- พาสซีฟปลดล็อกตามเลเวล (บล็อก, ดูดเลือด, เจาะเกราะ, ศรคู่, ลด MP ฯลฯ) และ **ปลุกพลังสกิล** ที่ Lv.10 (สกิลเปลี่ยนรูปแบบ เช่น คลื่นปฐพี 3 แนว, มหาอัคคียิง 3 ลูก)
-- เปิดหน้ามาสเตอรี่ด้วยปุ่ม `K` หรือเมนู ⭐
+| มาสเตอรี่ | อาวุธ | สายสกิล (แถวในหน้าต่าง) |
+|---|---|---|
+| Wizard (EU) | คทา | Earth: Ground Charge→Ground Rave→Land Of The Contract · Earth Shock→Earth Quake→Earth Earthquake · Root→Mesh Root · Earth Barrier→Earth Fence / Cold: Ice Bolt→Frozen Spear→Cryophorus Fields · Snow Wind→Blizzard→Ice Roar · Mana Drain→Mana Drought · Invisible→Crystal Invisible / Fire: Fire Bolt→Strengthen Rocket · Meteor→Meteor Shower · Fire Blow→Salamander Blow→Hellforge · Fire Trap→Lava Trap→Baoyan Surgery · Detect→Sprawl Detect / Lightning: Lightning Bolt→Chain Lightning→Chain Lightning · Charged Wind→Charged Squall→Thunder · Lightning Shock→Lightning Impact · Teleport→Aerial Teleport / Life Control→Life Turnover |
+| Heuksal | หอก/ง้าว | Spear Thrust (Wolf Bite…Asura) · Bloody Fan Storm · Sweep (Dancing Demon…Pitch Black) · Soul Spear (Move…Emptiness) · Ghost Spear (Petal…Sea God, Heuksal storm) · Chain Spear (Tiger…Heaven) · Flying Dragon (Flow…Sky) · Spear Mastery |
+| Bicheon | ดาบ+โล่ | Smash · Chain · Shield · Cut Blade · Blade Force (ทำให้ล้ม) · Fallen-enemy (Flower Bloom…Mad Dragon) · Sword Dance · Bicheon Force |
+| Warrior (EU) | ดาบมือเดียว+โล่ / ดาบสองมือ / ขวาน | Vital Increase · Iron/Mana Skin · Howling/Beast Shout · Link buffs · ดาบโล่ (Shield Trash…Edge Shield) · ดาบสองมือ (Triple Swing, Dare Devil…) · ขวานคู่ (Down Cross…Crutial Rush) |
+| Pacheon | ธนู | Anti Devil Bow (Missile…Moon light) · Arrow Combo (2–7) · Hawk Summon (White/Black/Blue/Lightning/Ice/Fire — เหยี่ยวบินวนเหนือหัวและโฉบโจมตี) · Autumn Wind (Flame…Dragon) · Soul Arrow (เพิ่มระยะยิง) · ศรระเบิด (Berserker…Pitch Black) · Strong Bow (Spirit…Destruction, Bow Storm) · Mind Bow (Flower…Lighting) |
+
+เอฟเฟคสกิลทำตามคลิปทีละเฟรม (วงเวทย์ตามธาตุ, ฝุ่นดิน, เสาสายฟ้า, ลำเพลิงหอก, วงแหวน Ghost Spear, คลื่นดาบ ฯลฯ) และท่าทางสร้างใหม่ใน Blender (ถือคทาชาร์จ, หมุน 360°, กระโดดฟาด, ขว้างหอก, คุกเข่ารวมพลัง ฯลฯ)
 
 ## ✨ ระบบในเกม
 

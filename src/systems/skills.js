@@ -1,4 +1,4 @@
-import { SKILL_INDEX, MASTERY_DEFS, masteryCap, masteryLevelCost, skillReqMastery, skillCost, skillMult, skillMp } from '../data/skilltree.js';
+import { SKILL_INDEX, MASTERY_DEFS, FAMILY, masteryCap, masteryLevelCost, skillReqMastery, skillCost, skillMult, skillMp } from '../data/skilltree.js';
 
 export const HOTBAR_SLOTS = 10;
 export const HOTBAR_PAGES = 4;
@@ -15,15 +15,16 @@ export function ensureSkillState(s) {
   return s;
 }
 
-export function masteryTotal(s) { return Object.values(s.mlv).reduce((a, b) => a + b, 0); }
+export function masteryTotal(s, family = null) { return Object.entries(s.mlv).reduce((a, [k, v]) => a + (!family || FAMILY[k] === family ? v : 0), 0); }
 
 export function masteryUpInfo(s, m) {
   const lv = s.mlv[m] || 0;
   const cost = masteryLevelCost(lv);
-  const cap = masteryCap(s.level);
+  const fam = FAMILY[m];
+  const cap = masteryCap(s.level, fam);
   let reason = null;
   if (lv >= s.level) reason = `ระดับมาสเตอรี่สูงสุดเท่ากับเลเวลตัวละคร (Lv ${s.level})`;
-  else if (masteryTotal(s) >= cap) reason = `มาสเตอรี่รวมเต็มแล้ว (${masteryTotal(s)}/${cap})`;
+  else if (masteryTotal(s, fam) >= cap) reason = `มาสเตอรี่รวมเต็มแล้ว (${masteryTotal(s, fam)}/${cap})`;
   else if (s.sp < cost) reason = `Skill point ไม่พอ (ต้องการ ${cost.toLocaleString()})`;
   return { lv, cost, ok: !reason, reason };
 }

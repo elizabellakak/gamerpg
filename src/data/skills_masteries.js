@@ -122,12 +122,62 @@ registerRows('heuksal', [
     H('Spear Mastery', 1, 'hk_passive', 0, 0, 0, 12, 'สกิลติดตัว: เพิ่มพลังโจมตี 1% ต่อเลเวล', { buff: { atkPct: 1 } })] },
 ]);
 
+// Pacheon (bow) - the clip's window (Pacheon Mastery Lv 120). Cooldown groups as observed: row 1 {1,4,7} {2,5}
+// {3,6}; rows 2 and 4 {1,4} {2,5} {3,6}; row 6 {1,3,5} {2,4}; Strong Bow one group; Mind Bow {1,3} {2,4}.
+const Pc = (name, req, fx, dmg, mp, cd, max, desc, extra = {}) => ({ name, req, fx, dmg, mp, cd, max, desc, step: 1, ...extra });
 registerRows('pacheon', [
-  { icon: 'arrow', kind: 'attack', fx: 'bw_spiral', color: '#4090e0', desc: 'ศรทะลวง', tiers: [
-    T('Strong Bow I', 1, { dmg: 180, mp: 14, cd: 4, max: 9 }), T('Strong Bow II', 12, { dmg: 240, mp: 20, cd: 4, max: 9 }), T('Strong Bow III', 26, { dmg: 310, mp: 28, cd: 4, max: 9 })] },
-  { icon: 'rain', kind: 'attack', fx: 'bw_rain', color: '#60a0c0', desc: 'ฝนศร', tiers: [T('Arrow Rain I', 6, { dmg: 30, mp: 30, cd: 9, max: 9 }), T('Arrow Rain II', 22, { dmg: 42, mp: 40, cd: 9, max: 9 })] },
-  { icon: 'burst', kind: 'attack', fx: 'bw_burst', color: '#e06030', desc: 'ศรระเบิด', tiers: [T('Explosion Bow I', 10, { dmg: 130, mp: 30, cd: 8, max: 9 }), T('Explosion Bow II', 30, { dmg: 180, mp: 40, cd: 8, max: 9 })] },
-  { icon: 'star', kind: 'attack', fx: 'bw_starfall', color: '#a0c0ff', ult: true, desc: 'ลำแสงศรยักษ์', tiers: [T('Dragon Heart Bow', 40, { dmg: 800, mp: 80, cd: 28, max: 5 })] },
+  { icon: 'arrow', kind: 'attack', color: '#3a70d0', desc: 'Anti Devil Bow: ชาร์จแสงสีฟ้านาน แล้วยิงศรขาวพร้อมลำแสงฟ้า', tiers: [
+    Pc('Anti Devil Bow - Missile', 1, 'pc_adb_missile', 152, 10, 4, 9, 'ชาร์จแสงฟ้า 1.5 วินาที ยิงศรขาวลำแสงบาง', { cdGroup: 'adb_a' }),
+    Pc('Anti Devil Bow - Wave', 20, 'pc_adb_wave', 207, 16, 4, 9, 'พัดแสงฟ้า ปีกแสงสีน้ำเงินม่วงด้านหลัง แสงระเบิดขาวที่เป้า', { cdGroup: 'adb_b' }),
+    Pc('Anti Devil Bow - Steel', 40, 'pc_adb_steel', 265, 26, 4, 9, 'พัดแสงฟ้าขาวกว้าง 2 ช่วงตัว ลำแสงหนา', { cdGroup: 'adb_c' }),
+    Pc('Anti Devil Bow - Strike', 60, 'pc_adb_strike', 280, 36, 4, 9, 'ชาร์จแสงฟ้าม่วงใหญ่กว่า ลำแสงยาว (ชื่อช่องนี้ไม่ปรากฏในคลิป)', { cdGroup: 'adb_a' }),
+    Pc('Anti Devil Bow - Annihilate', 80, 'pc_adb_annihilate', 304, 48, 4, 9, 'เหมือน Steel แต่แรงกว่า ประกายแดงที่ปลายคันธนู', { cdGroup: 'adb_b' }),
+    Pc('Anti Devil Bow - Demolition', 116, 'pc_adb_demolition', 324, 64, 4, 9, 'เสาแสงฟ้าสูง 3 ช่วงตัว หอกแสงแนวนอน แล้วลำแสงหนา', { cdGroup: 'adb_c' }),
+    Pc('Anti Devil Bow - Moon light', 120, 'pc_adb_moonlight', 332, 72, 4, 9, 'เสาแสงฟ้า แสงออโรร่า กรวยแสงฟ้าขาวกว้าง 5 ช่วงตัว', { cdGroup: 'adb_a' })] },
+  { icon: 'rain', kind: 'attack', color: '#c03060', desc: 'Arrow Combo: ยิงรัว', tiers: [
+    Pc('2 Arrow Combo', 5, 'pc_combo2', 53, 8, 4, 9, 'ยิงศรสีชมพูแดง 2 ดอก', { hits: 2, cdGroup: 'ac_a' }),
+    Pc('3 Arrow Combo', 25, 'pc_combo3', 57, 14, 4, 9, 'ยิงรัว 3 ดอก', { hits: 3, cdGroup: 'ac_b' }),
+    Pc('4 Arrow Combo', 45, 'pc_combo4', 66, 22, 4, 9, 'ยิงลำแสงเลเซอร์สีชมพูแดง 4 ดอก', { hits: 4, cdGroup: 'ac_c' }),
+    Pc('5 Arrow Combo', 65, 'pc_combo5', 75, 32, 4, 9, 'สายศรต่อเนื่องเป็นลำแสงชมพูแดง ศัตรูกระเด็น', { hits: 5, cdGroup: 'ac_a' }),
+    Pc('6 Arrow Combo', 100, 'pc_combo6', 103, 48, 4, 9, 'สายศรต่อเนื่อง 6 ดอก', { hits: 6, cdGroup: 'ac_b' }),
+    Pc('7 Arrow Combo', 118, 'pc_combo7', 125, 62, 4, 9, 'ลำแสงศรยาวต่อเนื่อง 7 ดอก', { hits: 7, cdGroup: 'ac_c' })] },
+  { icon: 'star', kind: 'buff', color: '#808890', desc: 'Hawk: เรียกเหยี่ยวบินวนเหนือหัว (ครั้งละตัว)', tiers: [
+    Pc('White Hawk Summon', 10, 'pc_hawk_white', 0, 6, 1, 12, 'เหยี่ยวขาว: เพิ่มความแม่นยำ (คริ)', { prevIdx: -1 }),
+    Pc('Black Hawk Summon', 50, 'pc_hawk_black', 50, 18, 1, 12, 'เหยี่ยวดำ: บินโจมตีเป้าหมายเมื่อต่อสู้', { prevIdx: -1 }),
+    Pc('Blue Hawk Summon', 94, 'pc_hawk_blue', 90, 28, 1, 12, 'เหยี่ยวฟ้า (ต้องการ White Hawk Lv 12)', { prevIdx: 0, prevLv: 12 }),
+    Pc('Lightning Hawk Summon', 97, 'pc_hawk_lightning', 120, 36, 1, 12, 'เหยี่ยวสายฟ้าสีน้ำเงินเข้ม ประกายไฟฟ้าม่วง', { prevIdx: 1 }),
+    Pc('Ice Hawk', 104, 'pc_hawk_ice', 140, 44, 1, 12, 'เหยี่ยวน้ำแข็ง ทำให้ช้าลง', { prevIdx: 2 }),
+    Pc('Fire Hawk', 120, 'pc_hawk_fire', 160, 56, 1, 9, 'เหยี่ยวเพลิงสีส้มแดง เพิ่มความแม่นยำและโจมตีด้วยไฟ', { prevIdx: 3 })] },
+  { icon: 'wave', kind: 'attack', color: '#3aa0a0', desc: 'Autumn Wind: ศรทะลุ 3 ตัว หางเกลียวลม', tiers: [
+    Pc('Autumn Wind - Flame', 15, 'pc_aw_flame', 254, 12, 5, 9, 'ศรเร็ว ทะลุ 3 ตัว', { cdGroup: 'aw_a' }),
+    Pc('Autumn Wind - Snake', 35, 'pc_aw_snake', 210, 20, 5, 9, 'ศรเร็ว ทะลุ 3 ตัว', { cdGroup: 'aw_b' }),
+    Pc('Autumn Wind - Blood', 55, 'pc_aw_blood', 270, 30, 5, 9, 'ศรเร็ว ทะลุ 3 ตัว', { cdGroup: 'aw_c' }),
+    Pc('Autumn Wind - Red', 75, 'pc_aw_red', 290, 40, 5, 9, 'หัวศรเปลวไฟเหลืองส้ม หางเกลียวลมขาวฟ้า', { cdGroup: 'aw_a' }),
+    Pc('Autumn Wind - Devil', 114, 'pc_aw_devil', 318, 56, 5, 9, 'ดาวหางเหลืองขาว แล้วกลายเป็นเกลียวลมยาว', { cdGroup: 'aw_b' }),
+    Pc('Autumn Wind - Dragon', 120, 'pc_aw_dragon', 332, 66, 5, 9, 'เกลียวลมหนาที่สุด ระเบิดหมอกขาวฟ้าที่เป้า', { cdGroup: 'aw_c' })] },
+  { icon: 'imbue', kind: 'buff', color: '#6a50b0', desc: 'Soul Arrow: เพิ่มระยะยิง (ครั้งละอย่าง)', tiers: [
+    Pc('Demon Soul Arrow', 20, 'pc_soul_demon', 0, 8, 4, 5, 'ระยะยิง +2.8 ม.', { prevIdx: -1 }),
+    Pc('Bloody Soul Arrow', 40, 'pc_soul_bloody', 0, 14, 4, 5, 'ระยะยิง +3.8 ม.'),
+    Pc('Dragon Soul Arrow', 60, 'pc_soul_dragon', 0, 22, 4.5, 5, 'ระยะยิง +4.8 ม.'),
+    Pc('Phoenix Soul Arrow', 80, 'pc_soul_phoenix', 0, 32, 4.5, 5, 'ระยะยิง +5.9 ม.'),
+    Pc('Ice Hawk Soul Arrow', 118, 'pc_soul_icehawk', 0, 44, 5, 5, 'ระยะยิง +7.0 ม. ประกายน้ำแข็งลอยขึ้น')] },
+  { icon: 'burst', kind: 'attack', color: '#d06020', desc: 'ศรระเบิด: ระเบิดวงกว้างด้านหน้า 4 ตัว', tiers: [
+    Pc('Berserker Arrow', 25, 'pc_berserker_arrow', 206, 14, 8, 9, 'ศรเพลิง วงระเบิดส้มที่พื้น (รัศมี 4 ม.)', { cdGroup: 'bl_a' }),
+    Pc('Demon Arrow', 45, 'pc_demon_arrow', 264, 22, 8, 9, 'เลเซอร์แดง ระเบิดส้ม', { cdGroup: 'bl_b' }),
+    Pc('Devil Arrow', 65, 'pc_devil_arrow', 379, 34, 8, 9, 'ลูกไฟหางควันขาว ระเบิดขาวส้มพ่นออกด้านข้าง', { cdGroup: 'bl_a' }),
+    Pc('Celestial Beast Arrow', 85, 'pc_celestial_arrow', 405, 48, 8, 9, 'ศรเพลิงทอง ระเบิดเสาแสง (รัศมี 5 ม.)', { cdGroup: 'bl_b' }),
+    Pc('Pitch Black Arrow', 118, 'pc_pitch_black_arrow', 432, 66, 8, 9, 'จานมืดสีม่วงที่พื้น แสงระเบิด ลูกไฟส้ม ควันม่วงพวยพุ่ง (รัศมี 6 ม.)', { cdGroup: 'bl_a' })] },
+  { icon: 'sun', kind: 'attack', color: '#c0a020', desc: 'Strong Bow: แสงรัศมีขาวทอง แล้วศรสายฟ้าขาว (คูลดาวน์ร่วมทั้งแถว)', tiers: [
+    Pc('Strong Bow - Spirit', 30, 'pc_sb_spirit', 358, 14, 8, 9, 'รังสีแสงขาวเหลืองแผ่รอบตัว แล้วยิงศรสายฟ้าขาว', { col: 0, cdGroup: 'sb' }),
+    Pc('Strong Bow - Vision', 50, 'pc_sb_vision', 368, 24, 8, 9, 'รังสีแสงขาวเหลือง ศรสายฟ้าขาว', { col: 1, cdGroup: 'sb' }),
+    Pc('Strong Bow - Will', 70, 'pc_sb_will', 418, 40, 8, 9, 'วงเสี้ยวสีเหลืองอ่อนหมุนรอบตัว', { col: 2, cdGroup: 'sb' }),
+    Pc('Strong Bow - Destruction', 120, 'pc_sb_destruction', 429, 72, 8, 9, 'พายุเสี้ยวสีเหลือง ลมแรงพุ่งถึงเป้า ทำให้มึน', { col: 4, cdGroup: 'sb', prevIdx: 2 }),
+    Pc('Bow Storm', 125, 'pc_bow_storm', 471, 80, 8, 6, 'พายุธนู (ต้องการ Pacheon Lv 125)', { col: 5, cdGroup: 'sb', ult: true })] },
+  { icon: 'chain', kind: 'attack', color: '#d04080', desc: 'Mind Bow: ศรเลเซอร์ชมพูกระโดดหลายเป้า', tiers: [
+    Pc('Mind Bow - Flower', 90, 'pc_mb_flower', 195, 14, 8, 6, 'โดน 2 เป้าหมาย', { hits: 2, cdGroup: 'mb_a' }),
+    Pc('Mind Bow - Butterfly', 100, 'pc_mb_butterfly', 206, 26, 8, 6, 'โดน 3 เป้าหมาย', { hits: 3, cdGroup: 'mb_b' }),
+    Pc('Mind Bow - Swift', 108, 'pc_mb_swift', 228, 44, 8, 6, 'โดน 4 เป้าหมาย (เส้นเลเซอร์รูปตัว V)', { hits: 4, cdGroup: 'mb_a' }),
+    Pc('Mind Bow - Lighting', 115, 'pc_mb_lighting', 272, 70, 8, 6, 'โดน 5 เป้าหมาย', { hits: 5, cdGroup: 'mb_b' })] },
 ]);
 
 // Warrior (EU) - Melee > Warrior window from the clip (10 rows x 8 columns). Cells whose names never showed in the
