@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Aura Legends — ตำนานออร่า</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Kanit:wght@300;400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <div id="dmg-layer"></div>
+  <div id="ui"></div>
+  <div id="title">
+    <div class="t-bg"></div>
+    <div class="t-vignette"></div>
+    <div class="t-content">
+      <div class="logo">
+        <div class="logo-sub">ตำนานออร่า</div>
+        <h1>AURA<span>LEGENDS</span></h1>
+        <div class="logo-tag">⚔ ตีบวก · ออร่า · กาชา · บอสมังกร ⚔</div>
+      </div>
+      <div class="loading" id="loading"><div class="ld-bar"><div id="ld-fill"></div></div><div id="ld-text">กำลังโหลดโลกแห่งตำนาน... 0%</div></div>
+      <button id="btn-start" class="btn-start hidden">เริ่มการผจญภัย</button>
+      <div class="t-hint">WASD เดิน · คลิก โจมตี · 1-4 สกิล · Space หลบ · H ออโต้</div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
